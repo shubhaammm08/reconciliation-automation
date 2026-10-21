@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Trade-in Reconciliation</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f5f6f8;--card:#fff;--tx:#1a2230;--mu:#5c6676;--bd:#dde1e8;--ac:#1f5fbf;--ok:#1b7f4b;--er:#b3261e;--wn:#9a6700}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12151a;--card:#1b2028;--tx:#e8ecf2;--mu:#98a2b3;--bd:#2d3542;--ac:#6ea3ff;--ok:#4cc38a;--er:#ff8a80;--wn:#e3b341}}
+:root[data-theme="dark"]{--bg:#12151a;--card:#1b2028;--tx:#e8ecf2;--mu:#98a2b3;--bd:#2d3542;--ac:#6ea3ff;--ok:#4cc38a;--er:#ff8a80;--wn:#e3b341}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1200px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:0 0 2px}h2{font-size:15px;margin:0 0 8px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:14px}
+.mu{color:var(--mu)}.drop{border:2px dashed var(--bd);border-radius:10px;padding:16px;text-align:center;cursor:pointer}
+.drop.on{border-color:var(--ac)}.row{display:flex;gap:12px;flex-wrap:wrap}.row>*{flex:1 1 280px}
+button{background:var(--ac);color:#fff;border:0;border-radius:7px;padding:9px 16px;font:inherit;cursor:pointer}
+button:disabled{opacity:.45;cursor:not-allowed}button.s{background:transparent;color:var(--ac);border:1px solid var(--ac)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.k{background:var(--card);border:1px solid var(--bd);border-radius:9px;padding:10px;cursor:pointer;text-align:left;color:var(--tx)}
+.k:hover{border-color:var(--ac)}.k b{display:block;font-size:20px}.k span{font-size:12px;color:var(--mu)}
+.tabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}.tabs button{background:transparent;color:var(--tx);border:1px solid var(--bd)}.tabs button.a{background:var(--ac);color:#fff;border-color:var(--ac)}
+.tw{overflow-x:auto;max-height:520px;overflow-y:auto}table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{border-bottom:1px solid var(--bd);padding:5px 8px;text-align:left;white-space:nowrap;max-width:360px;overflow:hidden;text-overflow:ellipsis}
+th{position:sticky;top:0;background:var(--card);cursor:pointer}input[type=text],input[type=number]{background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:6px;padding:6px 8px;font:inherit}
+.ok{color:var(--ok)}.er{color:var(--er)}.wn{color:var(--wn)}progress{width:100%}pre{white-space:pre-wrap;margin:0}
+</style></head><body><main>
+<h1>Trade-in Reconciliation</h1><div class="mu" style="margin-bottom:12px">Runs entirely in your browser. No data is uploaded anywhere.</div>
+<div class="card"><div class="row">
+<div><h2>1. Source workbook (.xlsx)</h2><div class="drop" id="d1">Drop or click to choose<br><small class="mu">Trade in Register · Servify Customer Statement · Invoice No Report</small></div><div id="i1" class="mu"></div></div>
+<div><h2>2. Manual output (optional)</h2><div class="drop" id="d2">Drop or click to choose<br><small class="mu">Used for manual vs automated comparison</small></div><div id="i2" class="mu"></div></div></div>
+<div style="margin-top:10px">GST % <input type="number" id="gst" value="18" style="width:70px"> <label><input type="checkbox" id="incl"> Service fee amounts already include GST</label> · Tolerance ₹ <input type="number" id="tol" value="1" style="width:70px"></div>
+<div style="margin-top:10px"><button id="run" disabled>Run Reconciliation</button> <span id="st" class="mu"></span><progress id="pg" value="0" max="100" hidden></progress></div>
+<input type="file" id="f1" accept=".xlsx,.xls" hidden><input type="file" id="f2" accept=".xlsx,.xls" hidden></div>
+<div id="out" hidden>
+<div class="tabs" id="tabs"></div><div id="view"></div></div>
+</main>
+<script>
+const $=s=>document.querySelector(s),nk=s=>String(s??'').toLowerCase().replace(/[^a-z0-9]/g,'');
+const REM={M:'Matched with Books and GL',I:'IMEI money deducted but not billed',A:'AR of device not booked',S:'Service not applicable',R:'AR of Service Fee not booked',X:'Amount difference - review',N:'Not Eligible for Invoicing'};
+const FMT='#,##,##0;[Red](#,##,##0);-',inr=n=>n===''||n==null?'':Number(n).toLocaleString('en-IN',{maximumFractionDigits:2});
+const num=v=>{const n=parseFloat(String(v).replace(/,/g,''));return isNaN(n)?0:n};
+const files={},S={};let wbOut=null,okAll=false,tab='Dashboard',cur={t:'',rows:[],cols:[]};
+function cv(c){let v=c.value;if(v==null)return'';if(v instanceof Date)return v;if(typeof v==='object'){if('result' in v)return v.result??'';if(v.richText)return v.richText.map(t=>t.text).join('');if(v.text)return v.text}return v}
+const nId=v=>(typeof v==='number'?String(v):String(v??'').trim()).toUpperCase();
+function nImei(v){let s=String(v??'').trim();for(let i=0;i<3;i++)s=s.replace(/^(EB|BC|LC)[_\-\s]+/i,'').replace(/[_\-\s]+(EB|BC|LC)$/i,'');return s.trim().toUpperCase()}
+const sheet=(wb,n)=>wb.worksheets.find(w=>nk(w.name)===nk(n));
+function hdr(ws,r=1){const m={};if(!r)return m;ws.getRow(r).eachCell({includeEmpty:false},(c,i)=>{m[nk(cv(c))]??=i});return m}
+function findHdr(ws,key){for(let r=1;r<=40;r++){let f=0;ws.getRow(r).eachCell({includeEmpty:false},(c,i)=>{if(!f&&nk(cv(c))===key)f=i});if(f)return r}return 0}
+const fcol=(m,cands)=>{for(const c of cands)if(m[c])return m[c];return 0};
+function rd(ws,h=1){const cc=ws.columnCount,rows=[];ws.eachRow({includeEmpty:false},(r,n)=>{if(n<=h)return;const v=[];for(let c=1;c<=cc;c++)v[c]=cv(r.getCell(c));rows.push({n,v})});return rows}
+const fcount=wb=>wb.worksheets.reduce((a,w)=>{let k=0;w.eachRow(r=>r.eachCell(c=>{if(c.value&&typeof c.value==='object'&&(c.value.formula||c.value.sharedFormula))k++}));return a+k},0);
+function pick(id,fi,inf,key){const d=$(id),f=$(fi);d.onclick=()=>f.click();d.ondragover=e=>{e.preventDefault();d.classList.add('on')};d.ondragleave=()=>d.classList.remove('on');
+ d.ondrop=e=>{e.preventDefault();d.classList.remove('on');set(e.dataTransfer.files[0])};f.onchange=()=>set(f.files[0]);
+ async function set(f){if(!f)return;files[key]=f;$(inf).textContent='Loading '+f.name+'…';try{if(!/\.xlsx$/i.test(f.name))throw Error('ExcelJS reads .xlsx only. Please save .xls files as .xlsx first.');
+  const wb=new ExcelJS.Workbook();await wb.xlsx.load(await f.arrayBuffer());files[key+'wb']=wb;
+  $(inf).innerHTML=`<b>${esc(f.name)}</b><br>`+wb.worksheets.map(w=>`${esc(w.name)}: ${Math.max(0,w.actualRowCount-1)} records`).join('<br>')}catch(e){files[key+'wb']=null;$(inf).innerHTML=`<span class="er">${esc(e.message)}</span>`}
+  $('#run').disabled=!files.awb}}
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+pick('#d1','#f1','#i1','a');pick('#d2','#f2','#i2','m');
+const tick=()=>new Promise(r=>setTimeout(r,0)),prog=(p,t)=>{$('#pg').hidden=false;$('#pg').value=p;$('#st').textContent=t};
+$('#run').onclick=async()=>{try{await run()}catch(e){$('#st').innerHTML=`<span class="er">Error: ${esc(e.message)}</span>`;console.error(e)}};
+
+async function run(){
+ const wb=files.awb,tol=num($('#tol').value),rate=num($('#gst').value)/100,errs=[],warns=[];
+ $('#run').disabled=true;prog(5,'Validating…');await tick();
+ const wr=sheet(wb,'Trade in Register'),ws=sheet(wb,'Servify Customer Statement')||sheet(wb,'Servify Customer Ledger'),wi=sheet(wb,'Invoice No Report');
+ if(!wr)errs.push('Missing sheet: Trade in Register');if(!ws)errs.push('Missing sheet: Servify Customer Statement');if(!wi)errs.push('Missing sheet: Invoice No Report');
+ if(errs.length)return fail(errs);
+ const hr=hdr(wr),rs=findHdr(ws,'vouchernumber'),ri=findHdr(wi,'invoicenumber'),hs=hdr(ws,rs),hi=hdr(wi,ri);
+ const C={ref:fcol(hr,['tradeinrefid','tradeinreference','tradeinrefno']),imei:fcol(hr,['imei']),st:fcol(hr,['paymentstatus']),price:fcol(hr,['tradeinpriceretailer']),deb:fcol(hr,['amountdebited'])};
+ const I={ref:fcol(hi,['tradeinreference']),desc:fcol(hi,['linedescription']),amt:fcol(hi,['linelevelamount']),inv:fcol(hi,['invoicenumber']),imei:fcol(hi,['imei'])};
+ let refB=0;wi.getRow(ri||1).eachCell({includeEmpty:false},(c,i)=>{if(nk(cv(c))==='tradeinreference')refB=i});
+ if(!C.ref)errs.push('Trade in Register: Trade-in_ref_id column not found');if(!C.st)errs.push('Trade in Register: Payment Status not found');if(!C.price)errs.push('Trade in Register: Trade-in Price (Retailer) not found');
+ if(!C.deb)errs.push('Trade in Register: Amount Debited not found');
+ if(!ri||!I.inv||!I.desc||!I.amt||!refB)errs.push('Invoice No Report: need TRADEIN_REFERENCE, LINE_DESCRIPTION, LINE_LEVEL_AMOUNT, INVOICE_NUMBER headers');
+ const VC=hs['vouchernumber'];if(!rs||!VC)errs.push('Servify Customer Statement: "Voucher Number" header not found');
+ if(errs.length)return fail(errs);
+ const FP=[40,41,42,43,47],FN=[['servifefee'],['logisticsfee','logisticfee'],['incentive'],['vat'],['servifevalue']],hasFee=hr['actualservifee']||hr['actualserviyfee'];
+ const fee=FN.map((a,i)=>['',fcol(hr,a)||FP[i]]);
+ if(!hasFee&&FN.some(a=>!fcol(hr,a))){if(wr.columnCount<47)return fail(['Trade in Register has fewer than 47 columns; cannot place formula']);warns.push('Fee headers not detected by name; used AN/AO/AP/AQ/AU')}
+ const preF=fcount(wb);prog(15,'Reading sheets…');await tick();
+ const vouch=new Map();rd(ws,rs).forEach(r=>{const k=nId(r.v[VC]);if(k)vouch.set(k,r.n)});
+ const reg=rd(wr).map(r=>{const v=r.v;return{n:r.n,ref:nId(v[C.ref]),imei:C.imei?nImei(v[C.imei]):'',st:String(v[C.st]??'').trim().toUpperCase(),price:num(v[C.price]),fee:fee.reduce((a,f)=>a+num(v[f[1]]),0),debBlank:v[C.deb]===''||v[C.deb]==null}});
+ const regSet=new Set(reg.map(r=>r.ref)),SVC=/service fee|liquidator contribution|logistic/i;
+ const lines=[],exc=[],devRef=new Map(),svcRef=new Map(),devInv=new Map(),invFirst=new Map(),svcSum=new Map(),allSum=new Map();
+ rd(wi,ri).forEach(r=>{const v=r.v,inv=nId(v[I.inv]);if(!inv&&!v[I.desc]&&!v[I.amt])return;const desc=String(v[I.desc]??''),svc=SVC.test(desc),amt=num(v[I.amt]),ref=nId(v[I.ref]),gst=svc?amt*rate:'';
+  const L={n:r.n,vals:v,inv,invRaw:v[I.inv],type:svc?'Service Fee':'Device',ref,imei:I.imei?nImei(v[I.imei]):'',desc,amt,gst,total:amt+(gst||0),booked:vouch.has(inv)};
+  L.reason=L.booked?'':(inv?'Invoice number not found in Customer Statement Voucher Number':'Blank invoice number');L.action=L.booked?'':'Confirm with Servify whether the voucher is posted; book or correct invoice number';
+  lines.push(L);const m=svc?svcRef:devRef;if(ref&&!m.has(ref))m.set(ref,L);if(!svc&&!devInv.has(inv))devInv.set(inv,L);if(!invFirst.has(inv))invFirst.set(inv,L);
+  if(svc)svcSum.set(ref,(svcSum.get(ref)||0)+L.total);allSum.set(ref,(allSum.get(ref)||0)+L.total);
+  if(ref&&!regSet.has(ref))exc.push({Type:'Unmapped invoice line',Key:ref,Invoice:inv,Detail:`Invoice line ${r.n}: reference not in Trade in Register`})});
+ prog(50,'Applying lookups and remark rules…');await tick();
+ reg.forEach(r=>{const dl=devRef.get(r.ref),sl=svcRef.get(r.ref);
+  r.BC=dl?dl.invRaw:null;r.BD=sl?sl.invRaw:null;r.BE=r.BC!=null&&vouch.has(nId(r.BC))?r.BC:null;
+  const f=r.BC!=null?devInv.get(nId(r.BC)):null;r.BF=f?f.amt:null;r.BG=svcSum.has(r.ref)?svcSum.get(r.ref):null;
+  if(f&&f.ref!==r.ref)exc.push({Type:'Shared invoice',Key:r.ref,Invoice:String(r.BC),Detail:`Register row ${r.n}: Device Amount taken from first line of the invoice, which belongs to ${f.ref}`});
+  r.devD=r.BF==null?'':r.price-r.BF;r.svcD=r.BG==null?'':r.fee-r.BG;
+  const D=r.BE!=null,bdN=r.BD==null,sB=!bdN&&vouch.has(nId(r.BD)),z=x=>x!==''&&Math.abs(x)<=tol;
+  if(r.st!=='DEDUCTED'||(r.debBlank&&r.BC==null&&bdN)){r.rem=REM.N;r.why=r.st!=='DEDUCTED'?`Payment Status is "${r.st||'blank'}", not DEDUCTED`:'Amount Debited blank and no invoices'}
+  else if(D&&sB){if(z(r.devD)&&z(r.svcD)){r.rem=REM.M;r.why='Device and Service Fee invoices in GL; both differences are zero'}else{r.rem=REM.X;r.why='Both invoices in GL but a difference is not zero';exc.push({Type:'Amount difference',Key:r.ref,Invoice:String(r.BC),Detail:`Register row ${r.n}: Device diff ${inr(r.devD)}, Service diff ${inr(r.svcD)}`})}}
+  else if(D&&bdN){if(z(r.devD)){r.rem=REM.S;r.why='Device in GL with zero difference; no Service Fee invoice in raw report'}else{r.rem=REM.X;r.why='Device in GL but difference not zero';exc.push({Type:'Amount difference',Key:r.ref,Invoice:String(r.BC),Detail:`Register row ${r.n}: Device diff ${inr(r.devD)}`})}}
+  else if(!D&&sB){r.rem=REM.A;r.why='Service Fee invoice in GL; Device invoice missing or not in GL'}
+  else if(D){r.rem=REM.R;r.why='Device in GL; Service Fee invoice exists in raw report but not in GL'}
+  else{r.rem=REM.I;r.why='Amount debited but no GL-booked invoice found'}
+  if(r.st==='DEDUCTED'&&!r.ref)exc.push({Type:'Missing identifier',Key:'',Invoice:'',Detail:`Register row ${r.n}: no reference`})});
+ const unb=lines.filter(l=>!l.booked),bk=lines.filter(l=>l.booked),sum=(a,t)=>a.filter(l=>l.type===t).reduce((x,l)=>x+l.total,0);
+ [...new Set(unb.map(l=>l.inv))].forEach(i=>exc.push({Type:'Unbooked invoice',Key:'',Invoice:i,Detail:'In Invoice No Report but not in GL; excluded from booked totals'}));
+ const cnt=k=>reg.filter(r=>r.rem===REM[k]).length,inv=new Set(lines.map(l=>l.inv));
+ S.reg=reg;S.lines=lines;S.unb=unb;S.exc=exc;S.invs=[];
+ S.k={tot:reg.length,ded:reg.filter(r=>r.st==='DEDUCTED').length,bk:bk.length,ub:unb.length,dv:sum(bk,'Device'),sv:sum(bk,'Service Fee'),miss:unb.reduce((a,l)=>a+l.total,0),dinv:inv.size,dmiss:new Set(unb.map(l=>l.inv)).size};
+ Object.keys(REM).forEach(k=>S.k[k]=cnt(k));
+ prog(70,'Building output workbook…');await tick();
+ const x={wr,ws,wi,C,I,ri,rs,refB,VC,fee,hasFee,invFirst,svcSum,allSum,vouch,lines};
+ buildOut(wb,x);
+ const post=fcount(wb),V=[],add=(n,ok,d)=>V.push({n,ok,d});
+ add('Required sheets and columns exist',true,'');add('Register record count preserved',wr.actualRowCount-1===reg.length,`${reg.length} rows`);
+ add('Source formulas preserved',post>=preF,`before ${preF}, after ${post} (includes new formulas)`);
+ add('Every remark is an approved category',reg.every(r=>Object.values(REM).includes(r.rem)),'');
+ add('Remark counts sum to register total',Object.keys(REM).reduce((a,k)=>a+S.k[k],0)===reg.length,'');
+ add('Booked + unbooked lines = invoice lines',bk.length+unb.length===lines.length,`${bk.length}+${unb.length}=${lines.length}`);
+ const fc=reg.length?wr.getCell(reg[reg.length-1].n,S.cols['Actual Servify Fee']).value:null;add('Actual Servify Fee formulas present',!!(fc&&fc.formula),fc&&fc.formula?'last row: ='+fc.formula:'missing');
+ S.V=V;okAll=V.every(v=>v.ok);
+ if(files.mwb){prog(90,'Comparing with manual output…');await tick();compare()}else S.cmp=null;
+ if(S.cmp)addSheet(wbOut,'Manual vs Automated Comparison',Object.keys(S.cmp[0]),S.cmp);
+ prog(100,okAll?'Done':'Done with failed validation');if(warns.length)$('#st').innerHTML+=warns.map(w=>`<div class="wn">⚠ ${esc(w)}</div>`).join('');
+ $('#out').hidden=false;tab='Dashboard';render();$('#run').disabled=false}
+
+function fail(e){$('#st').innerHTML=e.map(x=>`<div class="er">✗ ${esc(x)}</div>`).join('');$('#pg').hidden=true;$('#run').disabled=false}
+
+const HF={type:'pattern',pattern:'solid',fgColor:{argb:'FF1F3A5F'}},BAND={type:'pattern',pattern:'solid',fgColor:{argb:'FFF3F6FB'}},AMT=/amount|total|gst|sum|value|fee|price|diff/i,fill=a=>({type:'pattern',pattern:'solid',fgColor:{argb:a}});
+const RCOL={'Matched with Books and GL':'FFC6EFCE','IMEI money deducted but not billed':'FFFFC7CE','AR of device not booked':'FFFFD8A8','Service not applicable':'FFDDEBF7','AR of Service Fee not booked':'FFFFEB9C','Amount difference - review':'FFE4DFEC','Not Eligible for Invoicing':'FFE7E6E6'};
+function sty(w,h=1,fmt){const hr=w.getRow(h),n=w.columnCount,mx=[],isAmt=[],sm=w.name==='Reconciliation Summary';
+ hr.eachCell({includeEmpty:false},(c,j)=>{c.fill=HF;c.font={bold:true,color:{argb:'FFFFFFFF'},size:11};c.alignment={vertical:'middle',horizontal:'center',wrapText:true};c.border={bottom:{style:'medium',color:{argb:'FFF2A900'}}};const t=String(cv(c));mx[j]=t.length;isAmt[j]=AMT.test(t)});hr.height=32;
+ w.eachRow({includeEmpty:false},(r,i)=>{if(i<=h)return;r.eachCell({includeEmpty:false},(c,j)=>{let v=c.value;if(v&&typeof v==='object'&&'result' in v)v=v.result;const t=v==null?'':String(v);mx[j]=Math.max(mx[j]||0,Math.min(t.length,60));
+  if(i%2===0)c.fill=BAND;c.alignment={vertical:'top',wrapText:t.length>60};c.border={bottom:{style:'thin',color:{argb:'FFE1E6EE'}}};
+  if(typeof v==='number'&&isAmt[j])c.numFmt=fmt||(sm?(Number.isInteger(v)?'#,##0':'#,##0.00'):'#,##0.00;[Red](#,##0.00);-')});
+  const rc=RCOL[r.getCell(1).value];if(rc&&w.name==='Remark Pivot Summary')r.getCell(1).fill=fill(rc)});
+ for(let j=1;j<=n;j++)w.getColumn(j).width=Math.max(12,Math.min((mx[j]||10)+4,64));
+ w.views=[{state:'frozen',ySplit:h,showGridLines:false}];w.autoFilter={from:{row:h,column:1},to:{row:h,column:n}};w.properties.tabColor={argb:'FF1F3A5F'}}
+function addSheet(wb,name,head,rows){let w=wb.getWorksheet(name);if(w)wb.removeWorksheet(w.id);w=wb.addWorksheet(name);w.addRow(head);rows.forEach(r=>w.addRow(head.map(h=>r[h]??'')));sty(w,1);return w}
+
+function buildOut(wb,x){
+ wbOut=wb;const {wr,ws,wi,C,I,ri,rs,refB,VC,fee,hasFee,invFirst,svcSum,allSum}=x,L=(w,c)=>w.getColumn(c).letter,NAE={error:'#N/A'};
+ const put=(c,f,res)=>{c.value={formula:f,result:res==null?NAE:res}};
+ const col=(w,rowN,name)=>{let f=0,last=0;w.getRow(rowN).eachCell({includeEmpty:false},(c,i)=>{last=Math.max(last,i);if(!f&&nk(cv(c))===nk(name))f=i});if(!f){f=Math.max(last,w.columnCount)+1;const h=w.getRow(rowN).getCell(f);h.value=name;h.font={bold:true,color:{argb:'FF1F3A5F'}};h.fill=fill('FFF2A900');h.alignment={horizontal:'center',wrapText:true};w.getColumn(f).width=24}return f};
+ // Invoice No Report: Type, GST, Total (+ cleaned IMEI)
+ const kT=col(wi,ri,'Type'),kG=col(wi,ri,'GST'),kM=col(wi,ri,'Total'),kI=col(wi,ri,'IMEI (cleaned)');
+ const rate=num($('#gst').value)/100,aL=L(wi,I.amt),dL=L(wi,I.desc),tL=L(wi,kT),gL=L(wi,kG),mL=L(wi,kM),bL=L(wi,refB),vL=L(wi,I.inv);
+ S.lines.forEach(l=>{const n=l.n,w=wi.getRow(n);
+  put(w.getCell(kT),`IF(OR(ISNUMBER(SEARCH("Service Fee",${dL}${n})),ISNUMBER(SEARCH("Liquidator Contribution",${dL}${n})),ISNUMBER(SEARCH("Logistic",${dL}${n}))),"Service Fee","Device")`,l.type);
+  put(w.getCell(kG),`IF(${tL}${n}="Service Fee",${aL}${n}*${rate},"")`,l.gst);put(w.getCell(kM),`${aL}${n}+N(${gL}${n})`,l.total);w.getCell(kI).value=l.imei;w.getCell(kG).numFmt=w.getCell(kM).numFmt='#,##0.00;[Red](#,##0.00);-';
+  l.vals[kT]=l.type;l.vals[kG]=l.gst;l.vals[kM]=l.total;l.vals[kI]=l.imei});
+ const hv=[];wi.getRow(ri).eachCell({includeEmpty:false},(c,i)=>hv[i]=cv(c));
+ const copy=(name,type)=>{let w=wb.getWorksheet(name);if(w)wb.removeWorksheet(w.id);w=wb.addWorksheet(name);w.getRow(1).values=hv;S.lines.filter(l=>l.type===type).forEach((l,i)=>{w.getRow(2+i).values=l.vals});sty(w,1)};
+ copy('Device Invoice No report','Device');copy('Service Fee Invoice no report','Service Fee');
+ const piv=(name,src,m)=>{let w=wb.getWorksheet(name);if(w)wb.removeWorksheet(w.id);w=wb.addWorksheet(name);w.getRow(1).values=[,'TRADEIN_REFERENCE','Sum of Total'];let i=2;m.forEach((v,k)=>{if(!k)return;w.getCell(i,1).value=k;put(w.getCell(i,2),`SUMIF('${src}'!$${bL}:$${bL},A${i},'${src}'!$${mL}:$${mL})`,v);i++});sty(w,1)};
+ piv('Pivot','Invoice No Report',allSum);piv('Pivot for service fee','Service Fee Invoice no report',svcSum);
+ // Customer statement: Reference, IMEI
+ const cR=col(ws,rs,'Reference'),cI=col(ws,rs,'IMEI'),iL=L(ws,VC);
+ ws.eachRow({includeEmpty:false},(r,n)=>{if(n<=rs)return;const k=nId(cv(r.getCell(VC)));if(!k)return;const f=invFirst.get(k);
+  put(r.getCell(cR),`_xlfn.XLOOKUP(${iL}${n},'Invoice No Report'!${vL}:${vL},'Invoice No Report'!${bL}:${bL})`,f?f.ref:null);
+  put(r.getCell(cI),`_xlfn.XLOOKUP(${iL}${n},'Invoice No Report'!${vL}:${vL},'Invoice No Report'!${L(wi,kI)}:${L(wi,kI)})`,f?f.imei:null)});
+ // Trade in Register columns
+ const names=['Actual Servify Fee','Device Invoice No','Service Fee Invoice No.','Billed as per GL Report','Device Amount','Service Fee Amount','Device Difference Amount','Service Fee Difference Amount','Remarks','Remark Reason'],cols={};
+ names.forEach(n=>cols[n]=col(wr,1,n));S.cols=cols;S.remCol=cols['Remarks'];S.feeCol=cols['Actual Servify Fee'];
+ const l=n=>L(wr,cols[n]),rf=L(wr,C.ref),pr=L(wr,C.price),fs=fee.map(f=>L(wr,f[1])),dS="'Device Invoice No report'",sS="'Service Fee Invoice no report'",inL=L(wi,I.inv);
+ const idx=I.inv-refB+1;
+ S.reg.forEach(r=>{const n=r.n,w=wr.getRow(n),g=k=>w.getCell(cols[k]);
+  if(!hasFee)put(g('Actual Servify Fee'),fs.map(c=>c+n).join('+'),r.fee);
+  put(g('Device Invoice No'),`VLOOKUP(${rf}${n},${dS}!${bL}:${inL},${idx},0)`,r.BC);
+  put(g('Service Fee Invoice No.'),`VLOOKUP(${rf}${n},${sS}!${bL}:${inL},${idx},0)`,r.BD);
+  put(g('Billed as per GL Report'),`VLOOKUP(${l('Device Invoice No')}${n},'Servify Customer Statement'!${iL}:${iL},1,0)`,r.BE);
+  put(g('Device Amount'),`_xlfn.XLOOKUP(${l('Device Invoice No')}${n},${dS}!${inL}:${inL},${dS}!${aL}:${aL})`,r.BF);
+  put(g('Service Fee Amount'),`VLOOKUP(${rf}${n},'Pivot for service fee'!A:B,2,0)`,r.BG);
+  put(g('Device Difference Amount'),`${pr}${n}-${l('Device Amount')}${n}`,r.devD===''?null:r.devD);
+  put(g('Service Fee Difference Amount'),`${l('Actual Servify Fee')}${n}-${l('Service Fee Amount')}${n}`,r.svcD===''?null:r.svcD);
+  g('Remarks').value=r.rem;g('Remark Reason').value=r.why;['Actual Servify Fee','Device Amount','Service Fee Amount','Device Difference Amount','Service Fee Difference Amount'].forEach(k=>g(k).numFmt='#,##0.00;[Red](#,##0.00);-');if(RCOL[r.rem]){g('Remarks').fill=fill(RCOL[r.rem]);g('Remarks').font={bold:true}}});
+ const k=S.k,tx=(a,h)=>S.exc.length;
+ addSheet(wb,'Reconciliation Summary',['Metric','Value'],[['Trade-in Register records',k.tot],['DEDUCTED',k.ded],...Object.keys(REM).map(q=>[REM[q],k[q]]),['Invoice lines',S.lines.length],['GL-booked lines',k.bk],['Unbooked lines',k.ub],['Distinct invoices',k.dinv],['Distinct invoices missing from GL',k.dmiss],['GL-booked Device total',k.dv],['GL-booked Service Fee total (incl. GST)',k.sv],['Invoice amount missing from GL',k.miss],['Note','Formulas carry cached results computed by this app; Excel recalculates on open.']].map(a=>({Metric:a[0],Value:a[1]})));
+ addSheet(wb,'Unbooked Invoice Lines',['Invoice','Type','Reference','IMEI','Line description','Amount','Reason','Suggested action'],S.unb.map(q=>({'Invoice':q.inv,Type:q.type,Reference:q.ref,IMEI:q.imei,'Line description':q.desc,Amount:q.total,Reason:q.reason,'Suggested action':q.action})));
+ addSheet(wb,'Exception Report',['Type','Key','Invoice','Detail'],S.exc);
+ const lt=L(wr,cols['Remarks']),fl=L(wr,cols['Actual Servify Fee']),q="'Trade in Register'!",nr=wr.rowCount,rems=Object.values(REM);
+ let p=wb.getWorksheet('Remark Pivot Summary');if(p)wb.removeWorksheet(p.id);p=wb.addWorksheet('Remark Pivot Summary');
+ p.addRow(['Remarks','Count','Sum of Trade-in Price (Retailer)','Sum of Actual Servify Fee']);
+ rems.forEach((m,i)=>{const r=i+2,rows=S.reg.filter(z=>z.rem===m);p.getCell(r,1).value=m;put(p.getCell(r,2),`COUNTIF(${q}$${lt}$2:$${lt}$${nr},A${r})`,rows.length);put(p.getCell(r,3),`SUMIF(${q}$${lt}$2:$${lt}$${nr},A${r},${q}$${pr}$2:$${pr}$${nr})`,rows.reduce((a,z)=>a+z.price,0));put(p.getCell(r,4),`SUMIF(${q}$${lt}$2:$${lt}$${nr},A${r},${q}$${fl}$2:$${fl}$${nr})`,rows.reduce((a,z)=>a+z.fee,0))});
+ const t=rems.length+2;p.getCell(t,1).value='Grand Total';['B','C','D'].forEach((c,i)=>put(p.getCell(t,i+2),`SUM(${c}2:${c}${t-1})`,i?S.reg.reduce((a,z)=>a+(i===1?z.price:z.fee),0):S.reg.length));
+ sty(p,1,FMT);p.getColumn(2).numFmt='#,##0';p.autoFilter=undefined;const tr=p.getRow(t);tr.font={bold:true,color:{argb:'FFFFFFFF'}};tr.eachCell(c=>{c.fill=HF});p.getCell(t+2,1).value='Formula-driven pivot-style summary (not a native PivotTable); updates when source data changes.';p.getCell(t+2,1).font={italic:true,color:{argb:'FF5C6676'}};
+ addSheet(wb,'Read Me - Assumptions',['Topic','Detail'],[
+  {Topic:'Rules',Detail:'See rule.md. Steps follow your manual process; all lookups are Excel formulas with cached results.'},
+  {Topic:'Invoice No Report',Detail:`Type, GST (${$('#gst').value}% of LINE_LEVEL_AMOUNT, Service Fee only), Total, and IMEI (cleaned of EB/BC/LC) added at the end. Original columns untouched; TRADEIN_REFERENCE is trimmed in memory.`},
+  {Topic:'Lookups',Detail:'Device Amount uses XLOOKUP on the invoice number (first matching line). Service Fee Amount uses the Pivot for service fee (sum of Total per reference). Differences = Price − Device Amount; Actual Servify Fee − Service Fee Amount.'},
+  {Topic:'Limitations',Detail:'ExcelJS may drop pivot tables, charts or images from the source file. Pivots here are SUMIF/COUNTIF-driven. Press Ctrl+Alt+F9 in Excel to recalculate.'}])}
+
+function compare(){
+ const mw=sheet(files.mwb,'Trade in Register');if(!mw){S.cmp=[{Area:'Error','Investigation notes':'Manual workbook has no "Trade in Register" sheet'}];return}
+ const h=hdr(mw),rc=fcol(h,['tradeinrefid','tradeinreference','tradeinrefno','tradeinid','referenceno']),mr=fcol(h,['remarks','reconciliationremark']),mf=h['actualservifee']||h['actualserviyfee'],tol=num($('#tol').value),out=[];
+ const row=(a,k,m,au,dt,mrw,arw,nt,sg)=>out.push({Area:a,'Business key':k,'Manual value':m,'Automated value':au,Difference:typeof m==='number'&&typeof au==='number'?au-m:'','Manual row':mrw,'Automated row':arw,'Difference type':dt,'Investigation notes':nt,'Suggested correction':sg});
+ if(!rc||!mr){S.cmp=[{Area:'Error','Investigation notes':'Manual sheet needs TRADEIN_REFERENCE and Remarks columns'}];return}
+ const mrows=rd(mw),mm=new Map();mrows.forEach(r=>{const k=nId(r.v[rc]);if(k)(mm.get(k)||mm.set(k,[]).get(k)).push({n:r.n,rem:String(r.v[mr]??'').trim(),fee:mf?num(r.v[mf]):null,price:0})});
+ const used=new Set(),mc={},ac={};
+ S.reg.forEach(r=>{ac[r.rem]=(ac[r.rem]||0)+1;if(!r.ref)return;const m=mm.get(r.ref);
+  if(!m){row('Row','"'+r.ref+'"','(missing)',r.rem,'Missing in manual','',r.n,'Reference not found in manual file','');return}
+  if(m.length>1)row('Row',r.ref,m.length+' rows',1,'Duplicate match',m.map(x=>x.n).join(';'),r.n,'Duplicate key in manual file','Review manually');used.add(r.ref);const x=m[0];
+  if(x.rem!==r.rem)row('Remark',r.ref,x.rem,r.rem,'Remark differs',x.n,r.n,`Auto: ${r.why}`,'Review rule before adjusting; do not change from one case');
+  if(x.fee!=null&&Math.abs(x.fee-r.fee)>tol)row('Actual Servify Fee',r.ref,x.fee,r.fee,'Value differs',x.n,r.n,'Beyond tolerance','Check source columns AN,AO,AP,AQ,AU')});
+ mm.forEach((v,k)=>{v.forEach(x=>mc[x.rem]=(mc[x.rem]||0)+1);if(!used.has(k))row('Row',k,v[0].rem,'(missing)','Extra in manual',v[0].n,'','Reference not found in automated register','')});
+ row('Totals','All',mrows.length,S.reg.length,'Record count','','','','');
+ Object.values(REM).forEach(r=>{if((mc[r]||0)!==(ac[r]||0))row('Remark count',r,mc[r]||0,ac[r]||0,'Count differs','','','','')});
+ if(!out.length)row('Summary','','','','No differences','','','All compared fields agree','');S.cmp=out}
+
+const KP=[['Total register records','tot'],['Payment Status = DEDUCTED','ded'],['Matched with Books and GL','M'],['IMEI money deducted but not billed','I'],['AR of device not booked','A'],['AR of Service Fee not booked','R'],['Amount difference - review','X'],['Service not applicable','S'],['Not Eligible for Invoicing','N'],['Invoice lines matched to GL','bk'],['Invoice lines not matched to GL','ub'],['GL-booked Device amount ₹','dv'],['GL-booked Service Fee amount ₹','sv'],['Invoice amount missing from GL ₹','miss']];
+const RC=[['n','Row'],['ref','Reference'],['imei','IMEI'],['st','Status'],['rem','Remark'],['why','Reason'],['price','Trade-in Price'],['fee','Actual Servify Fee'],['devD','Device Diff'],['svcD','Service Diff']];
+const LC=[['n','Row'],['inv','Invoice'],['type','Type'],['ref','Reference'],['desc','Description'],['amt','Amount'],['booked','In GL'],['reason','Reason']];
+function kfilter(k){const m={tot:[S.reg,RC],ded:[S.reg.filter(r=>r.st==='DEDUCTED'),RC],bk:[S.lines.filter(l=>l.booked),LC],ub:[S.unb,LC],dv:[S.lines.filter(l=>l.booked&&l.type==='Device'),LC],sv:[S.lines.filter(l=>l.booked&&l.type==='Service Fee'),LC],miss:[S.unb,LC]};
+ if(REM[k])return[S.reg.filter(r=>r.rem===REM[k]),RC];return m[k]}
+function render(){
+ const T=['Dashboard','Records','Exceptions','Comparison','Rules'];$('#tabs').innerHTML=T.map(t=>`<button class="${t===tab?'a':''}" data-t="${t}">${t}</button>`).join('')+`<button id="dl">Download Excel</button>`+(S.cmp?'<button id="dc" class="s">Download comparison</button>':'');
+ $('#tabs').querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;render()});
+ const dl=$('#dl');dl.disabled=!okAll;dl.title=okAll?'':'A validation check failed';dl.onclick=()=>save(wbOut,'Trade_in_Reconciliation_Output.xlsx');
+ if($('#dc'))$('#dc').onclick=async()=>{const w=new ExcelJS.Workbook();addSheet(w,'Manual vs Automated Comparison',Object.keys(S.cmp[0]),S.cmp);save(w,'Manual_vs_Automated_Comparison.xlsx')};
+ const v=$('#view');
+ if(tab==='Dashboard'){const k=S.k;v.innerHTML=`<div class="kpis">${KP.map(([l,x])=>`<button class="k" data-k="${x}"><b>${/₹/.test(l)?'₹'+inr(k[x]):inr(k[x])}</b><span>${l}</span></button>`).join('')}</div>
+ <div class="card" style="margin-top:14px"><h2>Processing summary</h2><div>Distinct invoices: ${k.dinv} · missing from GL: ${k.dmiss} · exceptions: ${S.exc.length}</div>
+ <h2 style="margin-top:10px">Validation checks</h2>${S.V.map(c=>`<div class="${c.ok?'ok':'er'}">${c.ok?'✓':'✗'} ${esc(c.n)} <span class="mu">${esc(c.d)}</span></div>`).join('')}
+ <div class="${okAll?'ok':'er'}" style="margin-top:6px"><b>${okAll?'All validation checks passed.':'Critical validation failed — download disabled.'}</b></div>
+ <div class="mu" style="margin-top:6px">Reference sample figures (informational only): 8,727 records · 1,209 DEDUCTED · 4,275 invoice lines.</div></div>`;
+  v.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{const[r,c]=kfilter(b.dataset.k);cur={t:b.querySelector('span').textContent,rows:r,cols:c};tab='Records';render()})}
+ else if(tab==='Records'){if(!cur.rows.length&&!cur.t)cur={t:'All register records',rows:S.reg,cols:RC};table(v,cur.t,cur.rows,cur.cols)}
+ else if(tab==='Exceptions')table(v,'Exception investigation',S.exc,['Type','Key','Invoice','Detail'].map(x=>[x,x]));
+ else if(tab==='Comparison')S.cmp?table(v,'Manual vs Automated',S.cmp,Object.keys(S.cmp[0]).map(x=>[x,x])):v.innerHTML='<div class="card mu">Upload a manual output file and re-run to see the comparison.</div>';
+ else v.innerHTML=`<div class="card"><h2>Rules</h2><pre>1 Not DEDUCTED → Not Eligible for Invoicing
+2 Device + Service Fee invoices in GL → Matched with Books and GL (amount differences still raised in Exceptions)
+3 Device in GL, no Service Fee invoice in raw report → Service not applicable
+4 Device not in GL, Service Fee in GL → AR of device not booked
+5 Otherwise (DEDUCTED) → IMEI money deducted but not billed
+Matching: INVOICE_NUMBER vs Customer Statement column I Voucher Number, exact match after trimming.
+Service Fee: Service Fee / Liquidator Contribution / Logistic(s). GST rate and basis are configurable above.
+See the "Read Me - Assumptions" sheet in the output for full detail and limitations.</pre></div>`}
+function table(v,title,rows,cols){let q='',sk=null,sd=1;const draw=()=>{let r=rows.filter(x=>!q||cols.some(([k])=>String(x[k]??'').toLowerCase().includes(q)));if(sk)r=[...r].sort((a,b)=>(a[sk]>b[sk]?1:a[sk]<b[sk]?-1:0)*sd);
+ $('#tb').innerHTML=r.slice(0,500).map(x=>'<tr>'+cols.map(([k])=>`<td>${typeof x[k]==='number'&&k!=='n'?inr(x[k]):esc(x[k])}</td>`).join('')+'</tr>').join('');$('#cn').textContent=`${r.length} rows${r.length>500?' (showing first 500)':''}`};
+ v.innerHTML=`<div class="card"><h2>${esc(title)}</h2><input type="text" id="q" placeholder="Search…"> <span id="cn" class="mu"></span><div class="tw"><table><thead><tr>${cols.map(([k,l])=>`<th data-k="${k}">${l}</th>`).join('')}</tr></thead><tbody id="tb"></tbody></table></div></div>`;
+ $('#q').oninput=e=>{q=e.target.value.toLowerCase();draw()};v.querySelectorAll('th').forEach(t=>t.onclick=()=>{sd=sk===t.dataset.k?-sd:1;sk=t.dataset.k;draw()});draw()}
+async function save(wb,name){try{const buf=await wb.xlsx.writeBuffer(),blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});if(typeof claude!=='undefined'&&claude&&claude.use){try{const d=await claude.use('downloads');if(d){await d.save({filename:name,data:blob});return;}}catch(ce){if(ce&&ce.code==='declined')return;}}const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(()=>URL.revokeObjectURL(url),1000);}catch(e){alert('Download failed: '+(e.message||e))}}
+</script></body></html>
