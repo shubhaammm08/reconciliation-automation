@@ -19,7 +19,7 @@ const DEFAULT_STORE = {
       customReportMin: 1999,
     },
     whatsappNumber: process.env.WHATSAPP_NUMBER || '+91 8169832448',
-    supportEmail: process.env.SUPPORT_EMAIL || 'support@reconciliation-automation.com',
+    supportEmail: process.env.SUPPORT_EMAIL || 'shubham.s.kadam8@gmail.com',
     razorpayKeyId: process.env.RAZORPAY_KEY_ID || '',
   },
   affiliates: [

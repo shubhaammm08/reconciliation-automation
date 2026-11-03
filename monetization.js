@@ -17,7 +17,7 @@
     pricing: { detailedReport: 49, advancedAnalysis: 99, customReportMin: 1999 },
     razorpayKeyId: '',
     whatsappNumber: '+91 8169832448',
-    supportEmail: 'support@reconciliation-automation.com',
+    supportEmail: 'shubham.s.kadam8@gmail.com',
     sponsors: [],
     affiliates: [],
   };
@@ -284,7 +284,10 @@
             <textarea id="ct-reqs" rows="2" required placeholder="Describe your current process, custom columns, or specific mismatch rules needed..." style="width: 100%; box-sizing: border-box; background: var(--card); color: var(--tx); border: 1px solid var(--bd); border-radius: 6px; padding: 6px 8px; font: inherit;"></textarea>
           </div>
           <div style="grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-            <div id="ct-status" style="font-size: 13px;"></div>
+            <div>
+              <div id="ct-status" style="font-size: 13px;"></div>
+              <div class="mu" style="font-size: 11px; margin-top: 3px;">Inquiries are routed directly to: <b>shubham.s.kadam8@gmail.com</b></div>
+            </div>
             <button type="submit" id="ct-submit" style="background: var(--ac); color: #fff; padding: 9px 20px;">Submit Request &rarr;</button>
           </div>
         </form>
@@ -310,15 +313,30 @@
             requirements: document.getElementById('ct-reqs').value,
           };
 
+          // 1. Submit to API (database / admin portal)
           const res = await fetch('/api/custom-request', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
           });
 
+          // 2. Submit to Netlify Forms (triggers email notifications to shubham.s.kadam8@gmail.com)
+          try {
+            const formData = new URLSearchParams();
+            formData.append('form-name', 'custom-report-request');
+            formData.append('recipient', 'shubham.s.kadam8@gmail.com');
+            formData.append('subject', `Custom Template Request from ${payload.companyName}`);
+            for (const [k, v] of Object.entries(payload)) formData.append(k, String(v));
+            fetch('/__forms.html', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+              body: formData.toString(),
+            }).catch(() => {});
+          } catch {}
+
           const data = await res.json();
           if (res.ok && data.success) {
-            statusEl.innerHTML = `<span class="ok">✓ Request received (Ref: <b>${esc(data.ticketId)}</b>). Our engineering team will contact you within 24 hours.</span>`;
+            statusEl.innerHTML = `<span class="ok">✓ Request received (Ref: <b>${esc(data.ticketId)}</b>). Confirmation sent to shubham.s.kadam8@gmail.com.</span>`;
             form.reset();
           } else {
             statusEl.innerHTML = `<span class="er">✗ ${esc(data.error || 'Failed to submit request')}</span>`;
@@ -450,15 +468,30 @@
             consent: document.getElementById('cs-consent').checked,
           };
 
+          // 1. Submit to API (database / admin portal)
           const res = await fetch('/api/leads', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
           });
 
+          // 2. Submit to Netlify Forms (triggers email notifications to shubham.s.kadam8@gmail.com)
+          try {
+            const formData = new URLSearchParams();
+            formData.append('form-name', 'consulting-lead');
+            formData.append('recipient', 'shubham.s.kadam8@gmail.com');
+            formData.append('subject', `Enterprise Consulting Lead from ${payload.fullName} (${payload.company})`);
+            for (const [k, v] of Object.entries(payload)) formData.append(k, String(v));
+            fetch('/__forms.html', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+              body: formData.toString(),
+            }).catch(() => {});
+          } catch {}
+
           const data = await res.json();
           if (res.ok && data.success) {
-            statusEl.innerHTML = `<span class="ok">✓ Consultation request submitted (Ref: <b>${esc(data.leadId)}</b>). We will be in touch shortly.</span>`;
+            statusEl.innerHTML = `<span class="ok">✓ Consultation request submitted (Ref: <b>${esc(data.leadId)}</b>). Confirmation sent to shubham.s.kadam8@gmail.com.</span>`;
             form.reset();
           } else {
             statusEl.innerHTML = `<span class="er">✗ ${esc(data.error || 'Failed to submit inquiry')}</span>`;

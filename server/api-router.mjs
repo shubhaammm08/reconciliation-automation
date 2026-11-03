@@ -38,6 +38,30 @@ function parseUrl(urlStr) {
   }
 }
 
+async function dispatchNotificationEmail(subject, htmlBody) {
+  const recipient = process.env.SUPPORT_EMAIL || 'shubham.s.kadam8@gmail.com';
+  const apiKey = process.env.RESEND_API_KEY;
+  if (apiKey) {
+    try {
+      await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          from: 'Reconciliation Automation <onboarding@resend.dev>',
+          to: [recipient],
+          subject,
+          html: htmlBody,
+        }),
+      });
+    } catch (err) {
+      console.warn('Direct email dispatch warning:', err.message);
+    }
+  }
+}
+
 export async function handleApiRequest(req) {
   if (req.method === 'OPTIONS') {
     return new Response(null, {
@@ -161,10 +185,17 @@ export async function handleApiRequest(req) {
         requirements: String(requirements).trim(),
         status: 'new',
         submittedAt: new Date().toISOString(),
+        recipient: 'shubham.s.kadam8@gmail.com',
         notes: '',
       };
 
       await recordCustomRequest(newRequest);
+
+      // Automated notification trigger
+      dispatchNotificationEmail(
+        `[New Custom Template Request] ${newRequest.companyName}`,
+        `<h2>New Custom Template Request</h2><p><b>Company:</b> ${newRequest.companyName}</p><p><b>Contact:</b> ${newRequest.contactName}</p><p><b>Email:</b> ${newRequest.email}</p><p><b>Phone:</b> ${newRequest.phone}</p><p><b>ERP:</b> ${newRequest.erpSystem}</p><p><b>Requirements:</b><br>${newRequest.requirements}</p>`
+      ).catch(() => {});
 
       return jsonResponse({
         success: true,
@@ -200,10 +231,17 @@ export async function handleApiRequest(req) {
         consent: true,
         status: 'new',
         submittedAt: new Date().toISOString(),
+        recipient: 'shubham.s.kadam8@gmail.com',
         notes: '',
       };
 
       await recordLead(newLead);
+
+      // Automated notification trigger
+      dispatchNotificationEmail(
+        `[New Consulting Lead] ${newLead.fullName} - ${newLead.company}`,
+        `<h2>New Consulting Lead</h2><p><b>Name:</b> ${newLead.fullName}</p><p><b>Company:</b> ${newLead.company}</p><p><b>Email:</b> ${newLead.email}</p><p><b>Phone:</b> ${newLead.phone}</p><p><b>Volume:</b> ${newLead.businessSize}</p><p><b>Service:</b> ${newLead.serviceType}</p><p><b>Callback Requested:</b> ${newLead.callbackRequested ? 'YES' : 'NO'}</p><p><b>Message:</b><br>${newLead.message}</p>`
+      ).catch(() => {});
 
       return jsonResponse({
         success: true,
