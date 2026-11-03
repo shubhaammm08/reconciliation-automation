@@ -1,13 +1,9 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const isServerless = Boolean(process.env.NETLIFY || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.LAMBDA_TASK_ROOT);
-const DATA_DIR = isServerless ? path.join(os.tmpdir(), '.recon_data') : path.resolve(__dirname, '../.data');
+const DATA_DIR = isServerless ? path.join(os.tmpdir(), '.recon_data') : path.resolve(process.cwd(), '.data');
 const DATA_FILE = path.join(DATA_DIR, 'store.json');
 
 let memStore = null;
