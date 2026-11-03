@@ -36,8 +36,32 @@ th{position:sticky;top:0;background:var(--card);cursor:pointer}input[type=text],
 <div class="tabs" id="tabs"></div><div id="view"></div></div>
 <div id="monetization-sponsored"></div>
 <div id="monetization-affiliates"></div>
-<div id="monetization-custom-templates"></div>
-<div id="monetization-consulting"></div>
+<div id="monetization-custom-templates">
+  <form name="custom-report-request" method="POST" data-netlify="true" netlify-honeypot="bot-field" hidden>
+    <input type="hidden" name="form-name" value="custom-report-request">
+    <input type="text" name="bot-field">
+    <input type="text" name="companyName">
+    <input type="text" name="contactName">
+    <input type="email" name="email">
+    <input type="text" name="phone">
+    <input type="text" name="erpSystem">
+    <textarea name="requirements"></textarea>
+  </form>
+</div>
+<div id="monetization-consulting">
+  <form name="consulting-lead" method="POST" data-netlify="true" netlify-honeypot="bot-field" hidden>
+    <input type="hidden" name="form-name" value="consulting-lead">
+    <input type="text" name="bot-field">
+    <input type="text" name="fullName">
+    <input type="text" name="company">
+    <input type="email" name="email">
+    <input type="text" name="phone">
+    <input type="text" name="businessSize">
+    <input type="text" name="serviceType">
+    <textarea name="message"></textarea>
+    <input type="checkbox" name="callbackRequested">
+  </form>
+</div>
 <div id="monetization-footer"></div>
 </main>
 <script>
