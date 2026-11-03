@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Admin Dashboard &middot; Trade-in Reconciliation</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <style>
+    :root {
+      --bg: #f5f6f8;
+      --card: #fff;
+      --tx: #1a2230;
+      --mu: #5c6676;
+      --bd: #dde1e8;
+      --ac: #1f5fbf;
+      --ok: #1b7f4b;
+      --er: #b3261e;
+      --wn: #9a6700;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #12151a;
+        --card: #1b2028;
+        --tx: #e8ecf2;
+        --mu: #98a2b3;
+        --bd: #2d3542;
+        --ac: #6ea3ff;
+        --ok: #4cc38a;
+        --er: #ff8a80;
+        --wn: #e3b341;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #12151a;
+      --card: #1b2028;
+      --tx: #e8ecf2;
+      --mu: #98a2b3;
+      --bd: #2d3542;
+      --ac: #6ea3ff;
+      --ok: #4cc38a;
+      --er: #ff8a80;
+      --wn: #e3b341;
+    }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--tx);
+      font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+    header {
+      background: var(--card);
+      border-bottom: 1px solid var(--bd);
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px 16px;
+    }
+    h1 { font-size: 20px; margin: 0; }
+    h2 { font-size: 16px; margin: 0 0 12px; }
+    h3 { font-size: 14px; margin: 0 0 8px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--bd);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .mu { color: var(--mu); }
+    .ok { color: var(--ok); }
+    .er { color: var(--er); }
+    .wn { color: var(--wn); }
+    button {
+      background: var(--ac);
+      color: #fff;
+      border: 0;
+      border-radius: 6px;
+      padding: 8px 14px;
+      font: inherit;
+      cursor: pointer;
+    }
+    button.s {
+      background: transparent;
+      color: var(--tx);
+      border: 1px solid var(--bd);
+    }
+    button.danger {
+      background: var(--er);
+      color: #fff;
+    }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    input[type=text], input[type=password], input[type=email], input[type=number], select, textarea {
+      background: var(--card);
+      color: var(--tx);
+      border: 1px solid var(--bd);
+      border-radius: 6px;
+      padding: 7px 10px;
+      font: inherit;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; border-bottom: 1px solid var(--bd); padding-bottom: 8px; }
+    .tabs button {
+      background: transparent;
+      color: var(--tx);
+      border: 1px solid transparent;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-weight: 500;
+    }
+    .tabs button.active {
+      background: var(--ac);
+      color: #fff;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { border-bottom: 1px solid var(--bd); padding: 8px; text-align: left; }
+    th { background: rgba(0,0,0,0.02); font-weight: 600; color: var(--mu); font-size: 12px; text-transform: uppercase; }
+    .table-wrap { overflow-x: auto; max-height: 480px; overflow-y: auto; }
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .badge.green { background: rgba(27,127,75,0.15); color: var(--ok); }
+    .badge.blue { background: rgba(31,95,191,0.15); color: var(--ac); }
+    .badge.amber { background: rgba(154,103,0,0.15); color: var(--wn); }
+    .badge.red { background: rgba(179,38,30,0.15); color: var(--er); }
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px;
+    }
+    .modal-box {
+      background: var(--card); border: 1px solid var(--bd); border-radius: 10px; width: 100%; max-width: 520px; padding: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div style="display: flex; align-items: center; gap: 12px;">
+    <h1>Admin Portal &middot; Trade-in Recon</h1>
+    <span class="badge blue">Protected</span>
+  </div>
+  <div style="display: flex; gap: 10px; align-items: center;">
+    <a href="/" style="color: var(--ac); text-decoration: none; font-size: 13px;">&larr; Back to Tool</a>
+    <button id="btn-logout" class="s" style="display: none;">Logout</button>
+  </div>
+</header>
+
+<main>
+  <!-- Login Screen -->
+  <div id="view-login" style="max-width: 400px; margin: 60px auto;">
+    <div class="card" style="box-shadow: 0 4px 20px rgba(0,0,0,0.06);">
+      <h2>Administrator Login</h2>
+      <div class="mu" style="margin-bottom: 16px; font-size: 13px;">Enter admin password to access monetization controls, transactions, and business leads.</div>
+      <form id="form-login">
+        <div style="margin-bottom: 12px;">
+          <label style="font-size: 12px; font-weight: 600;">Admin Password</label>
+          <input type="password" id="input-password" required placeholder="Enter password" autofocus style="margin-top: 4px;">
+        </div>
+        <div id="login-error" class="er" style="margin-bottom: 10px; font-size: 13px;"></div>
+        <button type="submit" style="width: 100%; padding: 10px; font-weight: 600;">Sign In &rarr;</button>
+        <div class="mu" style="font-size: 11px; margin-top: 10px; text-align: center;">
+          Default development password: <code>admin123</code> (configurable via <code>ADMIN_PASSWORD</code> env var)
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Authenticated Dashboard -->
+  <div id="view-dashboard" style="display: none;">
+    <div class="tabs" id="admin-tabs">
+      <button class="active" data-tab="analytics">📊 Overview &amp; Analytics</button>
+      <button data-tab="ads">📢 Google AdSense</button>
+      <button data-tab="pricing">💳 Reports &amp; Pricing</button>
+      <button data-tab="affiliates">🔗 Affiliate Tools</button>
+      <button data-tab="sponsors">⭐ Sponsored Partners</button>
+      <button data-tab="custom">📑 Custom Requests</button>
+      <button data-tab="leads">👥 Consulting Leads</button>
+      <button data-tab="settings">⚙️ Settings</button>
+    </div>
+
+    <div id="tab-content"></div>
+  </div>
+</main>
+
+<script>
+(function() {
+  const $ = s => document.querySelector(s);
+  let adminData = null;
+  let currentTab = 'analytics';
+
+  function getToken() {
+    return sessionStorage.getItem('recon_admin_token') || localStorage.getItem('recon_admin_token');
+  }
+
+  function setToken(token) {
+    sessionStorage.setItem('recon_admin_token', token);
+  }
+
+  function clearToken() {
+    sessionStorage.removeItem('recon_admin_token');
+    localStorage.removeItem('recon_admin_token');
+  }
+
+  const inr = n => n === '' || n == null ? '0' : Number(n).toLocaleString('en-IN', { maximumFractionDigits: 2 });
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  async function api(path, opts = {}) {
+    const token = getToken();
+    const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+    
+    const res = await fetch('/api' + path, { ...opts, headers });
+    if (res.status === 401) {
+      clearToken();
+      showLogin();
+      throw new Error('Session expired. Please log in again.');
+    }
+    return res.json();
+  }
+
+  async function init() {
+    const token = getToken();
+    if (token) {
+      await loadDashboard();
+    } else {
+      showLogin();
+    }
+  }
+
+  function showLogin() {
+    $('#view-login').style.display = 'block';
+    $('#view-dashboard').style.display = 'none';
+    $('#btn-logout').style.display = 'none';
+  }
+
+  async function loadDashboard() {
+    try {
+      const data = await api('/admin/data');
+      adminData = data;
+      $('#view-login').style.display = 'none';
+      $('#view-dashboard').style.display = 'block';
+      $('#btn-logout').style.display = 'block';
+      renderTab();
+    } catch (err) {
+      showLogin();
+    }
+  }
+
+  // Login Form
+  $('#form-login').onsubmit = async (e) => {
+    e.preventDefault();
+    const pw = $('#input-password').value;
+    $('#login-error').textContent = '';
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pw })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setToken(data.token);
+        $('#input-password').value = '';
+        await loadDashboard();
+      } else {
+        $('#login-error').textContent = data.error || 'Invalid credentials';
+      }
+    } catch (err) {
+      $('#login-error').textContent = 'Error: ' + err.message;
+    }
+  };
+
+  $('#btn-logout').onclick = () => {
+    clearToken();
+    showLogin();
+  };
+
+  // Tab switching
+  $('#admin-tabs').querySelectorAll('[data-tab]').forEach(btn => {
+    btn.onclick = () => {
+      $('#admin-tabs').querySelectorAll('[data-tab]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentTab = btn.dataset.tab;
+      renderTab();
+    };
+  });
+
+  function renderTab() {
+    const el = $('#tab-content');
+    if (!adminData) return;
+
+    if (currentTab === 'analytics') renderAnalytics(el);
+    else if (currentTab === 'ads') renderAdsSettings(el);
+    else if (currentTab === 'pricing') renderPricing(el);
+    else if (currentTab === 'affiliates') renderAffiliates(el);
+    else if (currentTab === 'sponsors') renderSponsors(el);
+    else if (currentTab === 'custom') renderCustomRequests(el);
+    else if (currentTab === 'leads') renderLeads(el);
+    else if (currentTab === 'settings') renderSettings(el);
+  }
+
+  // 1. Overview & Analytics
+  function renderAnalytics(el) {
+    const an = adminData.analytics || {};
+    el.innerHTML = `
+      <div class="grid" style="margin-bottom: 16px;">
+        <div class="card">
+          <div class="mu" style="font-size: 12px; font-weight: 600;">TOTAL PREMIUM REVENUE</div>
+          <div style="font-size: 26px; font-weight: 800; color: var(--ok); margin-top: 4px;">₹${inr(an.totalRevenueInINR)}</div>
+          <div class="mu" style="font-size: 12px; margin-top: 4px;">${an.totalTransactions} paid unlocks</div>
+        </div>
+        <div class="card">
+          <div class="mu" style="font-size: 12px; font-weight: 600;">REPORTS BREAKDOWN</div>
+          <div style="font-size: 14px; margin-top: 6px;">
+            Detailed Reports (₹49): <b>${an.detailedReportsSold}</b><br>
+            Advanced Reports (₹99): <b>${an.advancedReportsSold}</b>
+          </div>
+        </div>
+        <div class="card">
+          <div class="mu" style="font-size: 12px; font-weight: 600;">CUSTOM REPORT REQUESTS</div>
+          <div style="font-size: 26px; font-weight: 800; color: var(--ac); margin-top: 4px;">${an.totalCustomRequests}</div>
+          <div class="mu" style="font-size: 12px; margin-top: 4px;">${an.pendingCustomRequests} pending review</div>
+        </div>
+        <div class="card">
+          <div class="mu" style="font-size: 12px; font-weight: 600;">BUSINESS CONSULTING LEADS</div>
+          <div style="font-size: 26px; font-weight: 800; color: var(--wn); margin-top: 4px;">${an.totalLeads}</div>
+          <div class="mu" style="font-size: 12px; margin-top: 4px;">${an.newLeads} new inquiries</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Recent Transactions</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th><th>Payment ID</th><th>Order ID</th><th>Report</th><th>Amount</th><th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${(adminData.transactions || []).slice(0, 10).map(t => `
+                <tr>
+                  <td>${new Date(t.timestamp).toLocaleDateString()}</td>
+                  <td><code>${esc(t.paymentId)}</code></td>
+                  <td><code>${esc(t.orderId)}</code></td>
+                  <td><span class="badge blue">${esc(t.reportType)}</span></td>
+                  <td><b>₹${inr(t.amount)}</b></td>
+                  <td><span class="badge green">${esc(t.status)}</span></td>
+                </tr>
+              `).join('') || '<tr><td colspan="6" class="mu" style="text-align:center;">No transactions recorded yet.</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+
+  // 2. Google AdSense Settings
+  function renderAdsSettings(el) {
+    const s = adminData.settings || {};
+    el.innerHTML = `
+      <div class="card" style="max-width: 600px;">
+        <h2>Google AdSense Configuration</h2>
+        <div class="mu" style="margin-bottom: 14px; font-size: 13px;">
+          Control responsive advertisement slots in the website footer and secondary sections. Ads are strictly prohibited inside the reconciliation workspace and results tables.
+        </div>
+        <form id="form-ads">
+          <div style="margin-bottom: 14px;">
+            <label style="display: flex; align-items: center; gap: 8px; font-weight: 600;">
+              <input type="checkbox" id="ad-enabled" ${s.adsEnabled ? 'checked' : ''}>
+              Enable Google AdSense Advertisements
+            </label>
+            <div class="mu" style="font-size: 11px; margin-left: 24px;">When disabled, ad containers are completely removed from the page.</div>
+          </div>
+          <div style="margin-bottom: 12px;">
+            <label style="font-size: 12px; font-weight: 600;">Publisher ID (Client ID)</label>
+            <input type="text" id="ad-pub" value="${esc(s.adsensePublisherId || '')}" placeholder="ca-pub-XXXXXXXXXXXXXXXX" style="margin-top: 4px;">
+            <div class="mu" style="font-size: 11px; margin-top: 2px;">Configurable also via <code>ADSENSE_PUBLISHER_ID</code> environment variable.</div>
+          </div>
+          <div style="margin-bottom: 16px;">
+            <label style="font-size: 12px; font-weight: 600;">Responsive Ad Slot ID (Optional)</label>
+            <input type="text" id="ad-slot" value="${esc(s.adsenseSlotId || '')}" placeholder="e.g. 1234567890" style="margin-top: 4px;">
+          </div>
+          <button type="submit">Save AdSense Settings</button>
+          <span id="ad-status" style="margin-left: 10px; font-size: 13px;"></span>
+        </form>
+      </div>
+    `;
+
+    $('#form-ads').onsubmit = async (e) => {
+      e.preventDefault();
+      const status = $('#ad-status');
+      status.innerHTML = '<span class="mu">Saving...</span>';
+      try {
+        const payload = {
+          adsEnabled: $('#ad-enabled').checked,
+          adsensePublisherId: $('#ad-pub').value.trim(),
+          adsenseSlotId: $('#ad-slot').value.trim(),
+        };
+        await api('/admin/settings', { method: 'POST', body: JSON.stringify(payload) });
+        status.innerHTML = '<span class="ok">✓ Saved successfully!</span>';
+        await loadDashboard();
+      } catch (err) {
+        status.innerHTML = `<span class="er">✗ ${esc(err.message)}</span>`;
+      }
+    };
+  }
+
+  // 3. Reports & Pricing
+  function renderPricing(el) {
+    const p = (adminData.settings && adminData.settings.pricing) || { detailedReport: 49, advancedAnalysis: 99, customReportMin: 1999 };
+    const txs = adminData.transactions || [];
+    el.innerHTML = `
+      <div class="card" style="max-width: 600px; margin-bottom: 16px;">
+        <h2>Report Pricing Configuration</h2>
+        <form id="form-pricing">
+          <div class="grid" style="margin-bottom: 12px;">
+            <div>
+              <label style="font-size: 12px; font-weight: 600;">Detailed Report (₹)</label>
+              <input type="number" id="pr-detailed" value="${p.detailedReport}" min="1" required>
+            </div>
+            <div>
+              <label style="font-size: 12px; font-weight: 600;">Advanced Analysis (₹)</label>
+              <input type="number" id="pr-advanced" value="${p.advancedAnalysis}" min="1" required>
+            </div>
+          </div>
+          <div style="margin-bottom: 14px;">
+            <label style="font-size: 12px; font-weight: 600;">Custom Report Starting Price (₹)</label>
+            <input type="number" id="pr-cmin" value="${p.customReportMin || 1999}" min="1">
+          </div>
+          <button type="submit">Update Pricing</button>
+          <span id="pr-status" style="margin-left: 10px; font-size: 13px;"></span>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>All Premium Transactions (${txs.length})</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th><th>Payment ID</th><th>Order ID</th><th>Report Type</th><th>Amount</th><th>Status</th><th>Receipt Token</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${txs.map(t => `
+                <tr>
+                  <td>${new Date(t.timestamp).toLocaleString()}</td>
+                  <td><code>${esc(t.paymentId)}</code></td>
+                  <td><code>${esc(t.orderId)}</code></td>
+                  <td><span class="badge blue">${esc(t.reportType)}</span></td>
+                  <td><b>₹${inr(t.amount)}</b></td>
+                  <td><span class="badge green">${esc(t.status)}</span> ${t.isDemo ? '<span class="badge amber">Test</span>' : ''}</td>
+                  <td><code style="font-size: 11px;">${esc(t.verificationToken || '')}</code></td>
+                </tr>
+              `).join('') || '<tr><td colspan="7" class="mu" style="text-align:center;">No transactions recorded.</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    $('#form-pricing').onsubmit = async (e) => {
+      e.preventDefault();
+      const status = $('#pr-status');
+      status.innerHTML = '<span class="mu">Saving...</span>';
+      try {
+        const pricing = {
+          detailedReport: Number($('#pr-detailed').value),
+          advancedAnalysis: Number($('#pr-advanced').value),
+          customReportMin: Number($('#pr-cmin').value),
+          customReportMax: Number($('#pr-cmax').value),
+        };
+        await api('/admin/settings', { method: 'POST', body: JSON.stringify({ pricing }) });
+        status.innerHTML = '<span class="ok">✓ Pricing updated!</span>';
+        await loadDashboard();
+      } catch (err) {
+        status.innerHTML = `<span class="er">✗ ${esc(err.message)}</span>`;
+      }
+    };
+  }
+
+  // 4. Affiliate Tools
+  function renderAffiliates(el) {
+    const affs = adminData.affiliates || [];
+    el.innerHTML = `
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h2>Affiliate Recommendations (${affs.length})</h2>
+          <button id="btn-add-aff" style="font-size: 13px;">+ Add Affiliate Tool</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Icon</th><th>Name</th><th>Category</th><th>Destination URL</th><th>Badge</th><th>Status</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${affs.map(a => `
+                <tr>
+                  <td style="font-size: 20px;">${esc(a.icon || '🛠️')}</td>
+                  <td><b>${esc(a.name)}</b><br><span class="mu" style="font-size: 11px;">${esc(a.description)}</span></td>
+                  <td>${esc(a.category)}</td>
+                  <td><a href="${esc(a.url)}" target="_blank" rel="noopener noreferrer" style="color: var(--ac); font-size: 12px;">${esc(a.url)}</a></td>
+                  <td><span class="badge blue">${esc(a.badge || '')}</span></td>
+                  <td><span class="badge ${a.active ? 'green' : 'amber'}">${a.active ? 'Active' : 'Hidden'}</span></td>
+                  <td>
+                    <button class="s btn-edit-aff" data-id="${esc(a.id)}" style="padding: 3px 8px; font-size: 11px;">Edit</button>
+                    <button class="danger btn-del-aff" data-id="${esc(a.id)}" style="padding: 3px 8px; font-size: 11px; margin-left: 4px;">Delete</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div id="aff-modal-container"></div>
+    `;
+
+    $('#btn-add-aff').onclick = () => openAffiliateModal();
+    el.querySelectorAll('.btn-edit-aff').forEach(b => {
+      b.onclick = () => {
+        const item = affs.find(a => a.id === b.dataset.id);
+        openAffiliateModal(item);
+      };
+    });
+    el.querySelectorAll('.btn-del-aff').forEach(b => {
+      b.onclick = async () => {
+        if (!confirm('Are you sure you want to delete this affiliate recommendation?')) return;
+        await api('/admin/affiliates/' + b.dataset.id, { method: 'DELETE' });
+        await loadDashboard();
+      };
+    });
+  }
+
+  function openAffiliateModal(item = null) {
+    const isEdit = Boolean(item);
+    const container = $('#aff-modal-container');
+    container.innerHTML = `
+      <div class="modal-backdrop">
+        <div class="modal-box">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+            <h3>${isEdit ? 'Edit Affiliate Recommendation' : 'Add Affiliate Tool'}</h3>
+            <button id="modal-close" style="background: transparent; color: var(--mu); border: 0; font-size: 20px; cursor: pointer;">&times;</button>
+          </div>
+          <form id="form-aff-edit">
+            <div style="margin-bottom: 8px;">
+              <label style="font-size: 12px; font-weight: 600;">Tool / Software Name</label>
+              <input type="text" id="m-aff-name" required value="${esc(item?.name || '')}">
+            </div>
+            <div class="grid" style="margin-bottom: 8px;">
+              <div>
+                <label style="font-size: 12px; font-weight: 600;">Category</label>
+                <input type="text" id="m-aff-cat" required value="${esc(item?.category || 'Accounting & ERP')}">
+              </div>
+              <div>
+                <label style="font-size: 12px; font-weight: 600;">Icon Emoji</label>
+                <input type="text" id="m-aff-icon" value="${esc(item?.icon || '📊')}">
+              </div>
+            </div>
+            <div style="margin-bottom: 8px;">
+              <label style="font-size: 12px; font-weight: 600;">Affiliate Destination URL</label>
+              <input type="text" id="m-aff-url" required value="${esc(item?.url || '')}">
+            </div>
+            <div style="margin-bottom: 8px;">
+              <label style="font-size: 12px; font-weight: 600;">Badge Text</label>
+              <input type="text" id="m-aff-badge" value="${esc(item?.badge || '')}">
+            </div>
+            <div style="margin-bottom: 8px;">
+              <label style="font-size: 12px; font-weight: 600;">Short Description</label>
+              <textarea id="m-aff-desc" rows="2">${esc(item?.description || '')}</textarea>
+            </div>
+            <div style="margin-bottom: 12px;">
+              <label style="display: flex; align-items: center; gap: 6px; font-size: 13px;">
+                <input type="checkbox" id="m-aff-active" ${!item || item.active ? 'checked' : ''}>
+                Display as Active Recommendation
+              </label>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 8px;">
+              <button type="button" class="s" id="modal-cancel">Cancel</button>
+              <button type="submit">${isEdit ? 'Save Changes' : 'Create Affiliate'}</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+
+    const close = () => { container.innerHTML = ''; };
+    $('#modal-close').onclick = close;
+    $('#modal-cancel').onclick = close;
+
+    $('#form-aff-edit').onsubmit = async (e) => {
+      e.preventDefault();
+      const payload = {
+        id: item?.id,
+        name: $('#m-aff-name').value.trim(),
+        category: $('#m-aff-cat').value.trim(),
+        icon: $('#m-aff-icon').value.trim(),
+        url: $('#m-aff-url').value.trim(),
+        badge: $('#m-aff-badge').value.trim(),
+        description: $('#m-aff-desc').value.trim(),
+        active: $('#m-aff-active').checked,
+      };
+      await api('/admin/affiliates', { method: 'POST', body: JSON.stringify(payload) });
+      close();
+      await loadDashboard();
+    };
+  }
+
+  // 5. Sponsored Placements
+  function renderSponsors(el) {
+    const sps = adminData.sponsors || [];
+    el.innerHTML = `
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h2>Sponsored Placements (${sps.length})</h2>
+          <button id="btn-add-sp" style="font-size: 13px;">+ Add Sponsor</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Partner Name</th><th>Tagline</th><th>Destination URL</th><th>Campaign Period</th><th>Status</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${sps.map(s => `
+                <tr>
+                  <td><b>${esc(s.name)}</b></td>
+                  <td>${esc(s.tagline || '')}</td>
+                  <td><a href="${esc(s.targetUrl)}" target="_blank" rel="sponsored noopener noreferrer" style="color: var(--ac); font-size: 12px;">${esc(s.targetUrl)}</a></td>
+                  <td><span class="mu" style="font-size: 11px;">${esc(s.startDate || 'Any')} &rarr; ${esc(s.endDate || 'Any')}</span></td>
+                  <td><span class="badge ${s.active ? 'green' : 'amber'}">${s.active ? 'Active' : 'Inactive'}</span></td>
+                  <td>
+                    <button class="s btn-edit-sp" data-id="${esc(s.id)}" style="padding: 3px 8px; font-size: 11px;">Edit</button>
+                    <button class="danger btn-del-sp" data-id="${esc(s.id)}" style="padding: 3px 8px; font-size: 11px; margin-left: 4px;">Delete</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div id="sp-modal-container"></div>
+    `;
+
+    $('#btn-add-sp').onclick = () => openSponsorModal();
+    el.querySelectorAll('.btn-edit-sp').forEach(b => {
+      b.onclick = () => {
+        const item = sps.find(s => s.id === b.dataset.id);
+        openSponsorModal(item);
+      };
+    });
+    el.querySelectorAll('.btn-del-sp').forEach(b => {
+      b.onclick = async () => {
+        if (!confirm('Are you sure you want to delete this sponsored placement?')) return;
+        await api('/admin/sponsors/' + b.dataset.id, { method: 'DELETE' });
+        await loadDashboard();
+      };
+    });
+  }
+
+  function openSponsorModal(item = null) {
+    const isEdit = Boolean(item);
+    const container = $('#sp-modal-container');
+    container.innerHTML = `
+      <div class="modal-backdrop">
+        <div class="modal-box">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+            <h3>${isEdit ? 'Edit Sponsored Placement' : 'Add Sponsored Partner'}</h3>
+            <button id="modal-sp-close" style="background: transparent; color: var(--mu); border: 0; font-size: 20px; cursor: pointer;">&times;</button>
+          </div>
+          <form id="form-sp-edit">
+            <div style="margin-bottom: 8px;">
+              <label style="font-size: 12px; font-weight: 600;">Sponsor / Partner Name</label>
+              <input type="text" id="m-sp-name" required value="${esc(item?.name || '')}">
+            </div>
+            <div style="margin-bottom: 8px;">
+              <label style="font-size: 12px; font-weight: 600;">Tagline</label>
+              <input type="text" id="m-sp-tag" value="${esc(item?.tagline || '')}">
+            </div>
+            <div style="margin-bottom: 8px;">
+              <label style="font-size: 12px; font-weight: 600;">Destination URL</label>
+              <input type="text" id="m-sp-url" required value="${esc(item?.targetUrl || '')}">
+            </div>
+            <div style="margin-bottom: 8px;">
+              <label style="font-size: 12px; font-weight: 600;">Badge Label</label>
+              <input type="text" id="m-sp-badge" value="${esc(item?.badgeText || 'Featured Partner')}">
+            </div>
+            <div class="grid" style="margin-bottom: 8px;">
+              <div>
+                <label style="font-size: 12px; font-weight: 600;">Campaign Start Date</label>
+                <input type="text" id="m-sp-start" placeholder="YYYY-MM-DD" value="${esc(item?.startDate || '')}">
+              </div>
+              <div>
+                <label style="font-size: 12px; font-weight: 600;">Campaign End Date</label>
+                <input type="text" id="m-sp-end" placeholder="YYYY-MM-DD" value="${esc(item?.endDate || '')}">
+              </div>
+            </div>
+            <div style="margin-bottom: 8px;">
+              <label style="font-size: 12px; font-weight: 600;">Description</label>
+              <textarea id="m-sp-desc" rows="2">${esc(item?.description || '')}</textarea>
+            </div>
+            <div style="margin-bottom: 12px;">
+              <label style="display: flex; align-items: center; gap: 6px; font-size: 13px;">
+                <input type="checkbox" id="m-sp-active" ${!item || item.active ? 'checked' : ''}>
+                Display Sponsor on Site
+              </label>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 8px;">
+              <button type="button" class="s" id="modal-sp-cancel">Cancel</button>
+              <button type="submit">${isEdit ? 'Save Changes' : 'Create Placement'}</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+
+    const close = () => { container.innerHTML = ''; };
+    $('#modal-sp-close').onclick = close;
+    $('#modal-sp-cancel').onclick = close;
+
+    $('#form-sp-edit').onsubmit = async (e) => {
+      e.preventDefault();
+      const payload = {
+        id: item?.id,
+        name: $('#m-sp-name').value.trim(),
+        tagline: $('#m-sp-tag').value.trim(),
+        targetUrl: $('#m-sp-url').value.trim(),
+        badgeText: $('#m-sp-badge').value.trim(),
+        startDate: $('#m-sp-start').value.trim(),
+        endDate: $('#m-sp-end').value.trim(),
+        description: $('#m-sp-desc').value.trim(),
+        active: $('#m-sp-active').checked,
+      };
+      await api('/admin/sponsors', { method: 'POST', body: JSON.stringify(payload) });
+      close();
+      await loadDashboard();
+    };
+  }
+
+  // 6. Custom Requests
+  function renderCustomRequests(el) {
+    const reqs = adminData.customRequests || [];
+    el.innerHTML = `
+      <div class="card">
+        <h2>Custom Template &amp; Report Requests (${reqs.length})</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Ticket ID</th><th>Company</th><th>Contact</th><th>Email &amp; Phone</th><th>ERP System</th><th>Requirements</th><th>Status</th><th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${reqs.map(r => `
+                <tr>
+                  <td><b>${esc(r.id)}</b><br><span class="mu" style="font-size: 11px;">${new Date(r.submittedAt).toLocaleDateString()}</span></td>
+                  <td><b>${esc(r.companyName)}</b></td>
+                  <td>${esc(r.contactName || '-')}</td>
+                  <td>${esc(r.email)}<br><span class="mu" style="font-size: 11px;">${esc(r.phone || '')}</span></td>
+                  <td>${esc(r.erpSystem || 'Standard')}</td>
+                  <td style="max-width: 260px; font-size: 12px;">${esc(r.requirements)}</td>
+                  <td><span class="badge ${r.status === 'completed' ? 'green' : r.status === 'in_progress' ? 'blue' : 'amber'}">${esc(r.status)}</span></td>
+                  <td>
+                    <select class="req-status-sel" data-id="${esc(r.id)}" style="font-size: 11px; padding: 3px 6px;">
+                      <option value="new" ${r.status === 'new' ? 'selected' : ''}>New</option>
+                      <option value="in_progress" ${r.status === 'in_progress' ? 'selected' : ''}>In Progress</option>
+                      <option value="completed" ${r.status === 'completed' ? 'selected' : ''}>Completed</option>
+                      <option value="closed" ${r.status === 'closed' ? 'selected' : ''}>Closed</option>
+                    </select>
+                  </td>
+                </tr>
+              `).join('') || '<tr><td colspan="8" class="mu" style="text-align:center;">No custom template requests yet.</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    el.querySelectorAll('.req-status-sel').forEach(sel => {
+      sel.onchange = async () => {
+        const id = sel.dataset.id;
+        const status = sel.value;
+        await api(`/admin/custom-requests/${id}/status`, {
+          method: 'POST',
+          body: JSON.stringify({ status })
+        });
+        await loadDashboard();
+      };
+    });
+  }
+
+  // 7. Consulting Leads
+  function renderLeads(el) {
+    const leads = adminData.leads || [];
+    el.innerHTML = `
+      <div class="card">
+        <h2>Enterprise Consulting Inquiries (${leads.length})</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Lead ID</th><th>Name &amp; Company</th><th>Contact Details</th><th>Volume</th><th>Service Interest</th><th>Callback?</th><th>Message</th><th>Status</th><th>Update</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${leads.map(l => `
+                <tr>
+                  <td><b>${esc(l.id)}</b><br><span class="mu" style="font-size: 11px;">${new Date(l.submittedAt).toLocaleDateString()}</span></td>
+                  <td><b>${esc(l.fullName)}</b><br><span class="mu" style="font-size: 12px;">${esc(l.company)}</span></td>
+                  <td>${esc(l.email)}<br><span class="mu" style="font-size: 11px;">${esc(l.phone)}</span></td>
+                  <td><span class="badge blue">${esc(l.businessSize)}</span></td>
+                  <td>${esc(l.serviceType)}</td>
+                  <td>${l.callbackRequested ? '<span class="badge green">Yes</span>' : '<span class="mu">No</span>'}</td>
+                  <td style="max-width: 240px; font-size: 12px;">${esc(l.message || '-')}</td>
+                  <td><span class="badge ${l.status === 'converted' ? 'green' : l.status === 'contacted' ? 'blue' : 'amber'}">${esc(l.status)}</span></td>
+                  <td>
+                    <select class="lead-status-sel" data-id="${esc(l.id)}" style="font-size: 11px; padding: 3px 6px;">
+                      <option value="new" ${l.status === 'new' ? 'selected' : ''}>New</option>
+                      <option value="contacted" ${l.status === 'contacted' ? 'selected' : ''}>Contacted</option>
+                      <option value="converted" ${l.status === 'converted' ? 'selected' : ''}>Converted</option>
+                      <option value="closed" ${l.status === 'closed' ? 'selected' : ''}>Closed</option>
+                    </select>
+                  </td>
+                </tr>
+              `).join('') || '<tr><td colspan="9" class="mu" style="text-align:center;">No consulting leads yet.</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    el.querySelectorAll('.lead-status-sel').forEach(sel => {
+      sel.onchange = async () => {
+        const id = sel.dataset.id;
+        const status = sel.value;
+        await api(`/admin/leads/${id}/status`, {
+          method: 'POST',
+          body: JSON.stringify({ status })
+        });
+        await loadDashboard();
+      };
+    });
+  }
+
+  // 8. General Settings
+  function renderSettings(el) {
+    const s = adminData.settings || {};
+    el.innerHTML = `
+      <div class="card" style="max-width: 600px;">
+        <h2>General Monetization Settings</h2>
+        <form id="form-general">
+          <div style="margin-bottom: 12px;">
+            <label style="font-size: 12px; font-weight: 600;">WhatsApp Support Number</label>
+            <input type="text" id="st-wa" value="${esc(s.whatsappNumber || '')}" placeholder="+91 98765 43210" style="margin-top: 4px;">
+            <div class="mu" style="font-size: 11px; margin-top: 2px;">Used in direct WhatsApp contact buttons.</div>
+          </div>
+          <div style="margin-bottom: 12px;">
+            <label style="font-size: 12px; font-weight: 600;">Support / Inquiries Email</label>
+            <input type="email" id="st-email" value="${esc(s.supportEmail || '')}" placeholder="support@domain.com" style="margin-top: 4px;">
+          </div>
+          <div style="margin-bottom: 16px;">
+            <label style="font-size: 12px; font-weight: 600;">Razorpay Key ID (Public)</label>
+            <input type="text" id="st-rzp" value="${esc(s.razorpayKeyId || '')}" placeholder="rzp_live_... or rzp_test_..." style="margin-top: 4px;">
+            <div class="mu" style="font-size: 11px; margin-top: 2px;">Keep <code>RAZORPAY_KEY_SECRET</code> strictly in your server environment variables.</div>
+          </div>
+          <button type="submit">Save Settings</button>
+          <span id="st-status" style="margin-left: 10px; font-size: 13px;"></span>
+        </form>
+      </div>
+    `;
+
+    $('#form-general').onsubmit = async (e) => {
+      e.preventDefault();
+      const status = $('#st-status');
+      status.innerHTML = '<span class="mu">Saving...</span>';
+      try {
+        const payload = {
+          whatsappNumber: $('#st-wa').value.trim(),
+          supportEmail: $('#st-email').value.trim(),
+          razorpayKeyId: $('#st-rzp').value.trim(),
+        };
+        await api('/admin/settings', { method: 'POST', body: JSON.stringify(payload) });
+        status.innerHTML = '<span class="ok">✓ Saved successfully!</span>';
+        await loadDashboard();
+      } catch (err) {
+        status.innerHTML = `<span class="er">✗ ${esc(err.message)}</span>`;
+      }
+    };
+  }
+
+  init();
+})();
+</script>
+
+</body>
+</html>
+

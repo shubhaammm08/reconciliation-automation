@@ -1,0 +1,29 @@
+{
+  "name": "trade-in-reconciliation-automation",
+  "version": "2.0.0",
+  "description": "Browser-based trade-in reconciliation automation tool with modular monetization features",
+  "main": "index.html",
+  "type": "module",
+  "scripts": {
+    "start": "node dev-server.mjs",
+    "dev": "node dev-server.mjs",
+    "test": "node test.mjs",
+    "build": "echo 'Static build ready'"
+  },
+  "keywords": [
+    "reconciliation",
+    "trade-in",
+    "servify",
+    "excel",
+    "exceljs",
+    "accounting",
+    "monetization"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0",
+    "@netlify/functions": "^3.0.0"
+  }
+}
+

@@ -4,3 +4,7 @@ Thumbs.db
 *.log
 .vercel
 node_modules/
+.env
+.env.local
+.data/
+.netlify/

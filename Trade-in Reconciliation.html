@@ -2,6 +2,7 @@
 <html lang="en"><head><meta charset="utf-8"><title>Trade-in Reconciliation</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <style>
 :root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f5f6f8;--card:#fff;--tx:#1a2230;--mu:#5c6676;--bd:#dde1e8;--ac:#1f5fbf;--ok:#1b7f4b;--er:#b3261e;--wn:#9a6700}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12151a;--card:#1b2028;--tx:#e8ecf2;--mu:#98a2b3;--bd:#2d3542;--ac:#6ea3ff;--ok:#4cc38a;--er:#ff8a80;--wn:#e3b341}}
@@ -33,6 +34,11 @@ th{position:sticky;top:0;background:var(--card);cursor:pointer}input[type=text],
 <input type="file" id="f1" accept=".xlsx,.xls" hidden><input type="file" id="f2" accept=".xlsx,.xls" hidden></div>
 <div id="out" hidden>
 <div class="tabs" id="tabs"></div><div id="view"></div></div>
+<div id="monetization-sponsored"></div>
+<div id="monetization-affiliates"></div>
+<div id="monetization-custom-templates"></div>
+<div id="monetization-consulting"></div>
+<div id="monetization-footer"></div>
 </main>
 <script>
 const $=s=>document.querySelector(s),nk=s=>String(s??'').toLowerCase().replace(/[^a-z0-9]/g,'');
@@ -241,4 +247,5 @@ function table(v,title,rows,cols){let q='',sk=null,sd=1;const draw=()=>{let r=ro
  v.innerHTML=`<div class="card"><h2>${esc(title)}</h2><input type="text" id="q" placeholder="Search…"> <span id="cn" class="mu"></span><div class="tw"><table><thead><tr>${cols.map(([k,l])=>`<th data-k="${k}">${l}</th>`).join('')}</tr></thead><tbody id="tb"></tbody></table></div></div>`;
  $('#q').oninput=e=>{q=e.target.value.toLowerCase();draw()};v.querySelectorAll('th').forEach(t=>t.onclick=()=>{sd=sk===t.dataset.k?-sd:1;sk=t.dataset.k;draw()});draw()}
 async function save(wb,name){try{const buf=await wb.xlsx.writeBuffer(),blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});if(typeof claude!=='undefined'&&claude&&claude.use){try{const d=await claude.use('downloads');if(d){await d.save({filename:name,data:blob});return;}}catch(ce){if(ce&&ce.code==='declined')return;}}const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(()=>URL.revokeObjectURL(url),1000);}catch(e){alert('Download failed: '+(e.message||e))}}
-</script></body></html>
+</script><script src="monetization.js"></script>
+</body></html>
