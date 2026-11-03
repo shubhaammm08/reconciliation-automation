@@ -125,6 +125,7 @@
             <a href="https://wa.me/${cleanWaNumber}?text=Hi,%20I%20have%20a%20question%20about%20Trade-in%20Reconciliation" target="_blank" rel="noopener noreferrer" style="color: var(--ac); text-decoration: none;">💬 WhatsApp Support</a>
             <a href="#custom-templates" style="color: var(--tx); text-decoration: none;">Custom Templates</a>
             <a href="#consulting" style="color: var(--tx); text-decoration: none;">Enterprise Consulting</a>
+            <a href="/monetization-guide.html" target="_blank" style="color: var(--tx); text-decoration: none;">📖 Payouts &amp; Ads Guide</a>
             <a href="/admin.html" style="color: var(--mu); text-decoration: none; font-size: 12px;">Admin Portal</a>
           </div>
         </div>

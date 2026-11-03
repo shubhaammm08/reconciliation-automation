@@ -187,3 +187,4 @@ Your site has a dedicated, password-protected administrative interface:
 - [ ] **Step 1: Sign up on Razorpay**: Complete KYC and paste your live `Key ID` & `Key Secret` into Netlify Environment Variables.
 - [ ] **Step 2: Sign up on Google AdSense**: Submit `https://reconciliation-automation.netlify.app/` and paste your Publisher ID in the Admin Portal.
 - [ ] **Step 3: Update Admin Password**: Set `ADMIN_PASSWORD` in Netlify environment variables so only you can access `/admin.html`.
+

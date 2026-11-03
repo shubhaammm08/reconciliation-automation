@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Monetization &amp; Payments Guide &middot; Trade-in Reconciliation</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --tx: #0f172a;
+      --mu: #475569;
+      --bd: #e2e8f0;
+      --ac: #1f5fbf;
+      --ok: #166534;
+      --wn: #854d0e;
+    }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--tx);
+      font: 14.5px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+    .top-bar {
+      background: #1e293b;
+      color: #fff;
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .top-bar h1 {
+      font-size: 16px;
+      margin: 0;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+    }
+    button, .btn {
+      background: #2563eb;
+      color: #fff;
+      border: 0;
+      border-radius: 6px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    button.sec, .btn.sec {
+      background: rgba(255,255,255,0.15);
+      color: #fff;
+    }
+    button:hover, .btn:hover {
+      filter: brightness(1.1);
+    }
+    main {
+      max-width: 900px;
+      margin: 30px auto;
+      background: var(--card);
+      border: 1px solid var(--bd);
+      border-radius: 12px;
+      padding: 40px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    }
+    h1.doc-title {
+      font-size: 26px;
+      margin: 0 0 6px;
+      color: #0f172a;
+    }
+    .doc-sub {
+      font-size: 14px;
+      color: var(--mu);
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid var(--bd);
+    }
+    h2 {
+      font-size: 18px;
+      margin: 32px 0 12px;
+      color: #1e293b;
+      border-left: 4px solid var(--ac);
+      padding-left: 10px;
+    }
+    h3 {
+      font-size: 15px;
+      margin: 20px 0 8px;
+      color: #334155;
+    }
+    p, li {
+      color: #334155;
+      line-height: 1.65;
+    }
+    ul, ol {
+      margin: 8px 0 16px 20px;
+      padding: 0;
+    }
+    li {
+      margin-bottom: 6px;
+    }
+    .callout {
+      background: #f1f5f9;
+      border-left: 4px solid var(--ac);
+      border-radius: 6px;
+      padding: 12px 16px;
+      margin: 16px 0;
+      font-size: 13.5px;
+    }
+    .callout.green {
+      background: #f0fdf4;
+      border-left-color: #16a34a;
+      color: #14532d;
+    }
+    .callout.amber {
+      background: #fefce8;
+      border-left-color: #ca8a04;
+      color: #713f12;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 13px;
+    }
+    th, td {
+      border: 1px solid var(--bd);
+      padding: 10px 12px;
+      text-align: left;
+    }
+    th {
+      background: #f8fafc;
+      font-weight: 600;
+      color: #1e293b;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: #dbeafe;
+      color: #1e40af;
+    }
+    .diagram {
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 18px;
+      border-radius: 8px;
+      font-family: ui-monospace, Menlo, Monaco, Consolas, monospace;
+      font-size: 12.5px;
+      line-height: 1.45;
+      overflow-x: auto;
+      margin: 18px 0;
+    }
+    code {
+      background: #f1f5f9;
+      color: #0f172a;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 12.5px;
+      font-family: ui-monospace, Menlo, Monaco, Consolas, monospace;
+    }
+    .checklist {
+      list-style: none;
+      margin-left: 0;
+    }
+    .checklist li {
+      padding: 8px 12px;
+      background: #f8fafc;
+      border: 1px solid var(--bd);
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+    @media print {
+      body {
+        background: #fff;
+        color: #000;
+      }
+      .top-bar {
+        display: none !important;
+      }
+      main {
+        border: none;
+        box-shadow: none;
+        padding: 0;
+        margin: 0;
+        max-width: 100%;
+      }
+      .diagram {
+        background: #f1f5f9;
+        color: #000;
+        border: 1px solid #ccc;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span>📘</span>
+    <h1>Trade-in Reconciliation &middot; Operational Guide</h1>
+  </div>
+  <div class="actions">
+    <button onclick="window.print()" style="background: #10b981;">📥 Download as PDF / Print</button>
+    <a href="MONETIZATION_AND_PAYMENTS_GUIDE.md" download class="btn sec">📄 Download Markdown</a>
+    <a href="/" class="btn sec">&larr; Back to Tool</a>
+  </div>
+</div>
+
+<main>
+  <h1 class="doc-title">Monetization, Bank Payouts &amp; Google AdSense Guide</h1>
+  <div class="doc-sub">
+    Application: <strong>https://reconciliation-automation.netlify.app/</strong> &middot; 
+    Admin Portal: <strong>/admin.html</strong> &middot; 
+    WhatsApp Support: <strong>+91 8169832448</strong>
+  </div>
+
+  <h2>1. Overview: How You Get Paid</h2>
+  <p>Your website has three distinct revenue models operating independently. None of them compromise user privacy or touch the free reconciliation tool.</p>
+
+  <div class="diagram">
+[Website Visitor / Customer]
+      │
+      ├── 1. Unlocks Premium Report (₹49 / ₹99)  ──► [Razorpay Gateway] ──► [Your Bank Account]
+      │                                                                      (Auto Daily Deposit)
+      │
+      ├── 2. Requests Custom Format (₹1,999+)   ──► [Admin Portal]      ──► [Direct Invoice / UPI]
+      │
+      ├── 3. Inquires for Automation Consulting  ──► [WhatsApp / Phone]   ──► [Direct Wire / Bank]
+      │                                              (+91 8169832448)
+      │
+      └── 4. Views / Clicks Banner Ads           ──► [Google AdSense]    ──► [Direct Bank Wire]
+                                                                             (Every 21st of Month)
+  </div>
+
+  <h2>2. Pay-Per-Use Reports via Razorpay (₹49 &amp; ₹99)</h2>
+  <p>The core reconciliation tool is 100% free. Users can optionally pay to unlock enriched management and compliance reports.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Report Option</th>
+        <th>Price</th>
+        <th>What It Contains</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Executive Financial Summary</strong></td>
+        <td><span class="badge">₹49</span></td>
+        <td>Financial KPI cards, GL matching percentages, and a prioritized discrepancy action checklist (High/Med/Low priority).</td>
+      </tr>
+      <tr>
+        <td><strong>Advanced Mismatch &amp; Root Cause Analysis</strong></td>
+        <td><span class="badge">₹99</span></td>
+        <td>Everything in ₹49 report + Root Cause categorization (timing vs tax vs unmapped lines), GST ITC compliance audit, and Servify Net Settlement matrix.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>How Money Reaches Your Bank</h3>
+  <ol>
+    <li>Customer clicks <strong>⭐ Premium Reports</strong> and selects a report.</li>
+    <li>Customer pays via <strong>UPI (GPay, PhonePe, Paytm), Cards, or Net Banking</strong> through the Razorpay modal.</li>
+    <li>Razorpay receives the funds and automatically deposits them into your bank account within <strong>1–2 business days</strong> (T+1 or T+2 settlements).</li>
+  </ol>
+
+  <div class="callout green">
+    <strong>Connecting Your Bank Account (Razorpay Setup):</strong>
+    <ol style="margin: 6px 0 0 16px;">
+      <li>Create a free account at <code>https://razorpay.com</code>.</li>
+      <li>Complete KYC and enter your Bank Account Number &amp; IFSC code.</li>
+      <li>Copy your <code>Key ID</code> (starts with <code>rzp_live_...</code>) from <em>Razorpay Dashboard > Settings > API Keys</em>.</li>
+      <li>Go to your <strong>Admin Portal > Settings</strong> and paste your Key ID (or add <code>RAZORPAY_KEY_ID</code> and <code>RAZORPAY_KEY_SECRET</code> in Netlify Environment Variables).</li>
+    </ol>
+  </div>
+
+  <h2>3. Custom Reports &amp; Business Consulting</h2>
+
+  <h3>Custom Templates (Starting from ₹1,999)</h3>
+  <ul>
+    <li>Organizations running SAP S/4HANA, Tally, Zoho, or Oracle NetSuite often require company-specific Excel formats.</li>
+    <li>Clients submit requirements via the <strong>"Need a Customized Reconciliation Format?"</strong> form.</li>
+    <li>All requests appear in your <strong>Admin Portal > Custom Requests</strong> tab with company name, email, phone number, and ERP details.</li>
+    <li>You contact the client and share an invoice, payment link, or UPI request for <strong>₹1,999+</strong>.</li>
+  </ul>
+
+  <h3>Enterprise Automation Consulting</h3>
+  <ul>
+    <li>Companies processing large monthly volumes (1,000 to 50,000+ devices) can request end-to-end automation consulting.</li>
+    <li>Clients can also click <strong>"💬 Chat on WhatsApp"</strong> to message you directly at <strong>+91 8169832448</strong>.</li>
+    <li>All inbound leads are tracked under <strong>Admin Portal > Consulting Leads</strong>.</li>
+  </ul>
+
+  <h2>4. Google AdSense (How Ads Work &amp; Pay You)</h2>
+  <p>Google AdSense connects corporate advertisers to your site and automatically serves targeted banner ads.</p>
+
+  <h3>Where Ads Appear</h3>
+  <ul>
+    <li>In the website footer slot (above the bottom legal links).</li>
+    <li>In selected secondary recommendation slots.</li>
+    <li><strong>Zero Interference</strong>: Ads will <em>never</em> appear inside the Excel upload boxes, calculation progress bars, results tables, or download buttons.</li>
+  </ul>
+
+  <h3>Activating AdSense</h3>
+  <ol>
+    <li>Sign up at <code>https://adsense.google.com</code> with your Google account.</li>
+    <li>Add your website URL: <code>https://reconciliation-automation.netlify.app/</code>.</li>
+    <li>Copy your Publisher ID (format: <code>ca-pub-XXXXXXXXXXXXXXXX</code>).</li>
+    <li>Open your <strong>Admin Portal > Google AdSense</strong> tab.</li>
+    <li>Check <strong>"Enable Google AdSense Advertisements"</strong>, paste your Publisher ID, and click <strong>Save</strong>.</li>
+  </ol>
+
+  <h3>How Google Pays You</h3>
+  <p>Add your bank account under <em>AdSense > Payments > Payment info</em>. Google automatically transfers your earnings on the <strong>21st of every month</strong> via direct bank wire / NEFT once your account reaches the minimum payout threshold ($100 / ~₹1,000).</p>
+
+  <h2>5. Admin Portal Quick Reference</h2>
+  <p>Manage pricing, view transactions, toggle ads, and review leads in your protected portal:</p>
+  <p><strong>URL:</strong> <code>https://reconciliation-automation.netlify.app/admin.html</code><br>
+  <strong>Default Password:</strong> <code>admin123</code></p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Tab</th>
+        <th>Functions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>📊 Analytics</strong></td>
+        <td>View total revenue in ₹, transaction counts, pending requests, and leads.</td>
+      </tr>
+      <tr>
+        <td><strong>📢 Google AdSense</strong></td>
+        <td>Turn ads ON or OFF with one switch, enter Publisher ID.</td>
+      </tr>
+      <tr>
+        <td><strong>💳 Reports &amp; Pricing</strong></td>
+        <td>Change report prices (₹49, ₹99) and inspect the transaction ledger.</td>
+      </tr>
+      <tr>
+        <td><strong>🔗 Affiliate Tools</strong></td>
+        <td>Edit recommended software links to add your affiliate commission codes.</td>
+      </tr>
+      <tr>
+        <td><strong>⭐ Sponsored Partners</strong></td>
+        <td>Add sponsor cards with logos, campaign dates, and links.</td>
+      </tr>
+      <tr>
+        <td><strong>📑 Custom Requests</strong></td>
+        <td>Review incoming template requests and update status.</td>
+      </tr>
+      <tr>
+        <td><strong>👥 Consulting Leads</strong></td>
+        <td>Track inbound consulting inquiries and callback requests.</td>
+      </tr>
+      <tr>
+        <td><strong>⚙️ Settings</strong></td>
+        <td>Update your WhatsApp contact number and Razorpay Key ID.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>6. Quick Action Checklist</h2>
+  <ul class="checklist">
+    <li>&#9745; <strong>Site Live on Netlify:</strong> <code>https://reconciliation-automation.netlify.app/</code></li>
+    <li>&#9745; <strong>WhatsApp Configured:</strong> Connected to <code>+91 8169832448</code></li>
+    <li>&#9745; <strong>Custom Template Pricing:</strong> Configured as <code>Starting from ₹1,999</code></li>
+    <li>&#9744; <strong>Step 1:</strong> Create Razorpay account &rarr; Paste live Key ID in Admin Portal Settings.</li>
+    <li>&#9744; <strong>Step 2:</strong> Submit site to Google AdSense &rarr; Paste Publisher ID in Admin Portal.</li>
+    <li>&#9744; <strong>Step 3:</strong> Change Admin Password via Netlify environment variables (<code>ADMIN_PASSWORD</code>).</li>
+  </ul>
+</main>
+
+<script>
+  // Print button shortcut
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+      window.print();
+    }
+  });
+</script>
+
+</body>
+</html>
