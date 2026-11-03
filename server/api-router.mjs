@@ -51,7 +51,10 @@ export async function handleApiRequest(req) {
   }
 
   const url = parseUrl(req.url);
-  const pathname = url.pathname;
+  let pathname = url.pathname;
+  if (pathname.startsWith('/.netlify/functions/api')) {
+    pathname = pathname.replace('/.netlify/functions/api', '/api');
+  }
   const headers = Object.fromEntries(req.headers.entries());
 
   try {

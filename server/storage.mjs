@@ -1,11 +1,16 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const DATA_DIR = path.resolve(__dirname, '../.data');
+
+const isServerless = Boolean(process.env.NETLIFY || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.LAMBDA_TASK_ROOT);
+const DATA_DIR = isServerless ? path.join(os.tmpdir(), '.recon_data') : path.resolve(__dirname, '../.data');
 const DATA_FILE = path.join(DATA_DIR, 'store.json');
+
+let memStore = null;
 
 const DEFAULT_STORE = {
   settings: {
@@ -119,38 +124,42 @@ async function getBlobStore() {
   return null;
 }
 
-// Local file storage helper
+// Local file storage helper with in-memory fallback
 function loadLocalStore() {
+  if (memStore) return memStore;
   try {
     if (!fs.existsSync(DATA_DIR)) {
       fs.mkdirSync(DATA_DIR, { recursive: true });
     }
     if (!fs.existsSync(DATA_FILE)) {
       fs.writeFileSync(DATA_FILE, JSON.stringify(DEFAULT_STORE, null, 2), 'utf-8');
-      return JSON.parse(JSON.stringify(DEFAULT_STORE));
+      memStore = JSON.parse(JSON.stringify(DEFAULT_STORE));
+      return memStore;
     }
     const data = fs.readFileSync(DATA_FILE, 'utf-8');
     const parsed = JSON.parse(data);
-    // Ensure nested objects exist
-    return {
+    memStore = {
       ...DEFAULT_STORE,
       ...parsed,
       settings: { ...DEFAULT_STORE.settings, ...(parsed.settings || {}) },
     };
+    return memStore;
   } catch (err) {
-    console.error('Error reading local store:', err);
-    return JSON.parse(JSON.stringify(DEFAULT_STORE));
+    console.warn('Local store read warning, using in-memory default store:', err.message);
+    memStore = memStore || JSON.parse(JSON.stringify(DEFAULT_STORE));
+    return memStore;
   }
 }
 
 function saveLocalStore(data) {
+  memStore = data;
   try {
     if (!fs.existsSync(DATA_DIR)) {
       fs.mkdirSync(DATA_DIR, { recursive: true });
     }
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
   } catch (err) {
-    console.error('Error saving local store:', err);
+    console.warn('Local store write warning, retained in memory:', err.message);
   }
 }
 
