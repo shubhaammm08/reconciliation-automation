@@ -332,11 +332,29 @@
               headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
               body: formData.toString(),
             }).catch(() => {});
+
+            // Direct inbox delivery to shubham.s.kadam8@gmail.com
+            fetch('https://formsubmit.co/ajax/shubham.s.kadam8@gmail.com', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+              body: JSON.stringify({
+                _subject: `New Custom Template Request - ${payload.companyName}`,
+                _captcha: 'false',
+                _template: 'table',
+                _replyto: payload.email,
+                'Company Name': payload.companyName,
+                'Contact Person': payload.contactName,
+                'Work Email': payload.email,
+                'Phone / WhatsApp': payload.phone,
+                'ERP System': payload.erpSystem,
+                'Requirements': payload.requirements,
+              }),
+            }).catch(() => {});
           } catch {}
 
           const data = await res.json();
           if (res.ok && data.success) {
-            statusEl.innerHTML = `<span class="ok">✓ Request received (Ref: <b>${esc(data.ticketId)}</b>). Confirmation sent to shubham.s.kadam8@gmail.com.</span>`;
+            statusEl.innerHTML = `<span class="ok">✓ Request received (Ref: <b>${esc(data.ticketId)}</b>). Notification sent directly to shubham.s.kadam8@gmail.com.</span>`;
             form.reset();
           } else {
             statusEl.innerHTML = `<span class="er">✗ ${esc(data.error || 'Failed to submit request')}</span>`;
@@ -486,6 +504,26 @@
               method: 'POST',
               headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
               body: formData.toString(),
+            }).catch(() => {});
+
+            // Direct inbox delivery to shubham.s.kadam8@gmail.com
+            fetch('https://formsubmit.co/ajax/shubham.s.kadam8@gmail.com', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+              body: JSON.stringify({
+                _subject: `New Consulting Lead - ${payload.fullName} (${payload.company})`,
+                _captcha: 'false',
+                _template: 'table',
+                _replyto: payload.email,
+                'Full Name': payload.fullName,
+                'Company': payload.company,
+                'Work Email': payload.email,
+                'Phone': payload.phone,
+                'Monthly Volume': payload.businessSize,
+                'Service Required': payload.serviceType,
+                'Callback Requested': payload.callbackRequested ? 'YES' : 'NO',
+                'Message': payload.message,
+              }),
             }).catch(() => {});
           } catch {}
 

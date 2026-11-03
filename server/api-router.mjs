@@ -38,8 +38,32 @@ function parseUrl(urlStr) {
   }
 }
 
-async function dispatchNotificationEmail(subject, htmlBody) {
+async function dispatchNotificationEmail(subject, data) {
   const recipient = process.env.SUPPORT_EMAIL || 'shubham.s.kadam8@gmail.com';
+
+  // 1. Direct automated delivery to Gmail inbox via FormSubmit
+  try {
+    await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(recipient)}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Origin': 'https://reconciliation-automation.netlify.app',
+        'Referer': 'https://reconciliation-automation.netlify.app/',
+      },
+      body: JSON.stringify({
+        _subject: subject,
+        _captcha: 'false',
+        _template: 'table',
+        _replyto: data.email || recipient,
+        ...data,
+      }),
+    });
+  } catch (err) {
+    console.warn('FormSubmit dispatch warning:', err.message);
+  }
+
+  // 2. Resend API fallback (if RESEND_API_KEY is configured)
   const apiKey = process.env.RESEND_API_KEY;
   if (apiKey) {
     try {
@@ -53,11 +77,11 @@ async function dispatchNotificationEmail(subject, htmlBody) {
           from: 'Reconciliation Automation <onboarding@resend.dev>',
           to: [recipient],
           subject,
-          html: htmlBody,
+          html: `<pre>${JSON.stringify(data, null, 2)}</pre>`,
         }),
       });
     } catch (err) {
-      console.warn('Direct email dispatch warning:', err.message);
+      console.warn('Resend email dispatch warning:', err.message);
     }
   }
 }
@@ -193,8 +217,17 @@ export async function handleApiRequest(req) {
 
       // Automated notification trigger
       dispatchNotificationEmail(
-        `[New Custom Template Request] ${newRequest.companyName}`,
-        `<h2>New Custom Template Request</h2><p><b>Company:</b> ${newRequest.companyName}</p><p><b>Contact:</b> ${newRequest.contactName}</p><p><b>Email:</b> ${newRequest.email}</p><p><b>Phone:</b> ${newRequest.phone}</p><p><b>ERP:</b> ${newRequest.erpSystem}</p><p><b>Requirements:</b><br>${newRequest.requirements}</p>`
+        `New Custom Template Request - ${newRequest.companyName}`,
+        {
+          'Ticket ID': newRequest.id,
+          'Company Name': newRequest.companyName,
+          'Contact Person': newRequest.contactName,
+          'Work Email': newRequest.email,
+          'Phone / WhatsApp': newRequest.phone,
+          'ERP System': newRequest.erpSystem,
+          'Requirements': newRequest.requirements,
+          'Submitted At': newRequest.submittedAt,
+        }
       ).catch(() => {});
 
       return jsonResponse({
@@ -239,8 +272,20 @@ export async function handleApiRequest(req) {
 
       // Automated notification trigger
       dispatchNotificationEmail(
-        `[New Consulting Lead] ${newLead.fullName} - ${newLead.company}`,
-        `<h2>New Consulting Lead</h2><p><b>Name:</b> ${newLead.fullName}</p><p><b>Company:</b> ${newLead.company}</p><p><b>Email:</b> ${newLead.email}</p><p><b>Phone:</b> ${newLead.phone}</p><p><b>Volume:</b> ${newLead.businessSize}</p><p><b>Service:</b> ${newLead.serviceType}</p><p><b>Callback Requested:</b> ${newLead.callbackRequested ? 'YES' : 'NO'}</p><p><b>Message:</b><br>${newLead.message}</p>`
+        `New Consulting Lead - ${newLead.fullName} (${newLead.company})`,
+        {
+          'Lead ID': newLead.id,
+          'Full Name': newLead.fullName,
+          'Company': newLead.company,
+          'Work Email': newLead.email,
+          'Phone / WhatsApp': newLead.phone,
+          'Monthly Volume': newLead.businessSize,
+          'Service Required': newLead.serviceType,
+          'Callback Requested': newLead.callbackRequested ? 'YES' : 'NO',
+          'Preferred Callback Time': newLead.callbackTime || 'N/A',
+          'Client Message': newLead.message,
+          'Submitted At': newLead.submittedAt,
+        }
       ).catch(() => {});
 
       return jsonResponse({
